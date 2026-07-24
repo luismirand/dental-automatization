@@ -1,0 +1,158 @@
+{
+  "name": "Cal.com - Booking Tool for LLM",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "llm-booking-trigger",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Webhook (From LLM)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.cal.com/v1/bookings",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"eventTypeId\": 123456,\n  \"start\": \"{{ $json.body.start }}\",\n  \"end\": \"{{ $json.body.end }}\",\n  \"responses\": {\n    \"name\": \"{{ $json.body.name }}\",\n    \"email\": \"{{ $json.body.email }}\",\n    \"location\": \"WhatsApp\"\n  },\n  \"timeZone\": \"America/Mexico_City\"\n}",
+        "options": {}
+      },
+      "id": "2",
+      "name": "HTTP: Create Booking",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 300],
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "calcom-api-key",
+          "name": "Cal.com API Key"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.error }}",
+              "operation": "isEmpty"
+            }
+          ]
+        }
+      },
+      "id": "3",
+      "name": "If Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO appointments (lead_id, cal_booking_id, start_time, end_time, status) VALUES ($1, $2, $3, $4, 'ACCEPTED');",
+        "options": {
+          "queryParameters": "={{ $('Webhook (From LLM)').item.json.body.lead_id }}, {{ $json.id }}, {{ $json.start }}, {{ $json.end }}"
+        }
+      },
+      "id": "4",
+      "name": "Save to DB (Success)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [850, 200],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-cred-id",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "booking_status",
+              "value": "FAILED"
+            },
+            {
+              "name": "error_message",
+              "value": "El horario solicitado ya fue ocupado o es inválido. Por favor, ofrezca otro horario al paciente."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5",
+      "name": "Return Error to LLM",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [850, 400]
+    }
+  ],
+  "connections": {
+    "Webhook (From LLM)": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Create Booking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Create Booking": {
+      "main": [
+        [
+          {
+            "node": "If Success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Success": {
+      "main": [
+        [
+          {
+            "node": "Save to DB (Success)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Error to LLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {}
+}

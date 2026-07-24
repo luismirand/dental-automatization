@@ -1,0 +1,142 @@
+{
+  "name": "WhatsApp - LLM Assistant (Dental Clinic)",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "whatsapp",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "1",
+      "name": "WhatsApp Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "whatsapp-llm-webhook-id"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM upsert_whatsapp_session($1, $2);",
+        "options": {
+          "queryParameters": "={{ $json.body.entry[0].changes[0].value.messages[0].from }}, {{ $json.body.entry[0].changes[0].value.contacts[0].profile.name }}"
+        }
+      },
+      "id": "2",
+      "name": "1. Upsert Session (Lock)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [450, 300],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-cred-id",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT sender_type, message_text FROM chat_messages WHERE conversation_id = $1 ORDER BY created_at DESC LIMIT 10;",
+        "options": {
+          "queryParameters": "={{ $json.conversation_id }}"
+        }
+      },
+      "id": "3",
+      "name": "2. Get Recent History",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [650, 300],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-cred-id",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gemini-1.5-flash",
+        "options": {
+          "systemMessage": "Eres el asistente virtual de la Clínica Dental Sonrisa Real. Eres amable, profesional y conciso. Tu objetivo es ayudar a los pacientes a resolver dudas sobre servicios (ortodoncia, implantes, diseño de sonrisa) y guiarlos para agendar una cita. Utiliza respuestas cortas y claras para WhatsApp."
+        }
+      },
+      "id": "4",
+      "name": "3. Google Gemini (LLM)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO chat_messages (conversation_id, sender_type, message_text) VALUES ($1, 'user', $2), ($1, 'assistant', $3);",
+        "options": {
+          "queryParameters": "={{ $('1. Upsert Session (Lock)').item.json.conversation_id }}, {{ $('WhatsApp Webhook').item.json.body.entry[0].changes[0].value.messages[0].text.body }}, {{ $json.output }}"
+        }
+      },
+      "id": "5",
+      "name": "4. Save Chat History",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [1050, 300],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-cred-id",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "WhatsApp Webhook": {
+      "main": [
+        [
+          {
+            "node": "1. Upsert Session (Lock)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Upsert Session (Lock)": {
+      "main": [
+        [
+          {
+            "node": "2. Get Recent History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Get Recent History": {
+      "main": [
+        [
+          {
+            "node": "3. Google Gemini (LLM)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Google Gemini (LLM)": {
+      "main": [
+        [
+          {
+            "node": "4. Save Chat History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  }
+}

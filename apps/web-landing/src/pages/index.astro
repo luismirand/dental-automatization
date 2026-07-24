@@ -1,0 +1,33 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { Navbar } from '../components/site/Navbar';
+import { Hero } from '../components/site/Hero';
+import { TrustBar } from '../components/site/TrustBar';
+import { ServicesGrid } from '../components/site/ServicesGrid';
+import { Pricing } from '../components/site/Pricing';
+import { Doctors } from '../components/site/Doctors';
+import { Testimonials } from '../components/site/Testimonials';
+import { CalWidgetPlaceholder } from '../components/site/CalWidgetPlaceholder';
+import { FAQ } from '../components/site/FAQ';
+import { LocationFooter } from '../components/site/LocationFooter';
+import { FloatingWhatsApp } from '../components/site/WhatsAppCTA';
+---
+
+<Layout 
+  title="Smile Studio — Clínica Dental de Alta Especialidad en CDMX"
+  description="Clínica dental de alta especialidad en CDMX: ortodoncia, implantes, diseño de sonrisa y urgencias 24/7. Financiamiento MSI. Agenda online."
+>
+  <Navbar client:load />
+  <main>
+    <Hero />
+    <TrustBar />
+    <ServicesGrid />
+    <Pricing />
+    <Doctors />
+    <Testimonials client:load />
+    <CalWidgetPlaceholder client:load />
+    <FAQ />
+  </main>
+  <LocationFooter />
+  <FloatingWhatsApp />
+</Layout>

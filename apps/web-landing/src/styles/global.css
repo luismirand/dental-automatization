@@ -1,0 +1,95 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@plugin "daisyui";
+
+@theme {
+  --breakpoint-xs: 375px;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+
+  --color-navy: var(--navy);
+  --color-navy-hover: var(--navy-hover);
+  --color-navy-foreground: var(--navy-foreground);
+  --color-cyan: var(--cyan);
+  --color-cyan-hover: var(--cyan-hover);
+  --color-cyan-foreground: var(--cyan-foreground);
+  --color-whatsapp: var(--whatsapp);
+  --color-whatsapp-hover: var(--whatsapp-hover);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-urgent: var(--urgent);
+
+  --font-sans: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --shadow-card: 0 1px 2px oklch(0.129 0.042 264 / 4%), 0 4px 14px oklch(0.129 0.042 264 / 6%);
+  --shadow-elevated: 0 6px 20px -8px oklch(0.129 0.042 264 / 18%);
+  --shadow-glow: 0 10px 40px -12px oklch(0.65 0.13 220 / 45%);
+}
+
+:root {
+  --radius: 0.875rem;
+
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.2 0.04 260);            /* #0F172A slate-900 */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.04 260);
+  --muted: oklch(0.97 0.008 250);               /* #F8FAFC slate-50 */
+  --muted-foreground: oklch(0.5 0.02 260);
+  --border: oklch(0.2 0.04 260 / 8%);
+  --ring: oklch(0.7 0.13 220);
+
+  /* Brand */
+  --navy: oklch(0.32 0.13 265);                 /* #1E3A8A blue-800 */
+  --navy-hover: oklch(0.26 0.13 265);
+  --navy-foreground: oklch(0.98 0.005 250);
+  --cyan: oklch(0.7 0.13 220);                  /* #0EA5E9 sky-500 */
+  --cyan-hover: oklch(0.62 0.14 220);
+  --cyan-foreground: oklch(1 0 0);
+  --whatsapp: oklch(0.72 0.17 155);             /* #25D366 */
+  --whatsapp-hover: oklch(0.65 0.17 155);
+  --surface: oklch(0.985 0.005 250);            /* #F8FAFC */
+  --surface-2: oklch(0.96 0.01 240);            /* soft blue-gray */
+  --urgent: oklch(0.65 0.22 25);                /* warm red for urgencias */
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  h1, h2, h3, h4 {
+    letter-spacing: -0.02em;
+  }
+}
+
+@utility container-page {
+  max-width: 80rem;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+  @media (min-width: 768px) {
+    padding-inline: 2rem;
+  }
+}
+

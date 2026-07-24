@@ -1,0 +1,23 @@
+# Environment files
+.env
+*.env
+!.env.example
+
+# Docker persistent volume data
+infrastructure/postgres_data/
+infrastructure/n8n_data/
+postgres_data/
+n8n_data/
+
+# Node modules & build outputs
+node_modules/
+dist/
+.astro/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary references
+tmp_reference/
+

@@ -1,0 +1,100 @@
+---
+// CalEmbed.astro - Optimized Cal.com widget loader for Astro (Non render-blocking)
+interface Props {
+  calLink?: string;
+}
+
+const { calLink = "luismira" } = Astro.props;
+---
+
+<section id="agendar" class="py-20 bg-slate-900 text-white relative overflow-hidden">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <!-- Section Header -->
+    <div class="text-center max-w-3xl mx-auto mb-12 space-y-4">
+      <span class="px-3.5 py-1 rounded-full bg-teal-500/10 text-teal-400 border border-teal-500/20 text-xs font-semibold uppercase tracking-wider">
+        Reserva tu turno al instante
+      </span>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-white">
+        Calendario de Agendamiento Directo
+      </h2>
+      <p class="text-slate-400 text-base">
+        Selecciona la fecha y hora que mejor se adapte a tu agenda. Recibirás una confirmación inmediata por correo y recordatorio por WhatsApp.
+      </p>
+    </div>
+
+    <!-- Container where Cal.com embed renders -->
+    <div class="rounded-3xl bg-slate-800/80 border border-slate-700/60 p-4 sm:p-8 shadow-2xl min-h-[600px] flex items-center justify-center">
+      <div
+        id="my-cal-inline"
+        class="w-full h-full min-h-[580px] overflow-hidden rounded-2xl bg-white"
+        data-cal-link={calLink}
+        data-cal-namespace="consulta"
+        data-cal-config='{"layout":"month_view"}'
+      >
+        <!-- Fallback loading state while Cal.com initializes -->
+        <div class="flex flex-col items-center justify-center h-[580px] text-slate-500 space-y-4 bg-slate-50">
+          <div class="w-10 h-10 border-4 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
+          <p class="text-sm font-medium">Cargando disponibilidad del calendario...</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Non-blocking script injection for Cal.com embed -->
+<script is:inline>
+  (function (C, A, L) {
+    let p = function (a, ar) {
+      a.q.push(ar);
+    };
+    let l = C.Cal = C.Cal || function () {
+      let cal = l;
+      let arg = arguments;
+      if (!cal.q) {
+        cal.q = [];
+      }
+      if (typeof arg[0] === "string") {
+        p(cal, arg);
+      } else {
+        cal.ns = cal.ns || {};
+        cal.ns[arg[0]] = cal.ns[arg[0]] || function () {
+          p(cal.ns[arg[0]], arguments);
+        };
+        p(cal.ns[arg[0]], arg);
+      }
+    };
+  })(window, "https://app.cal.com/embed/embed.js", "init");
+
+  // Asynchronously append Cal.com embed script without blocking initial paint
+  document.addEventListener('DOMContentLoaded', () => {
+    if (!document.getElementById('cal-embed-script')) {
+      const script = document.createElement('script');
+      script.id = 'cal-embed-script';
+      script.src = 'https://app.cal.com/embed/embed.js';
+      script.async = true;
+      script.onload = () => {
+        if (window.Cal) {
+          window.Cal("init", "consulta", { origin: "https://cal.com" });
+          
+          // Inline Embed Setup
+          window.Cal.ns["consulta"]("inline", {
+            elementOrSelector: "#my-cal-inline",
+            calLink: "luismira",
+            config: { layout: "month_view" }
+          });
+
+          // Global UI Popup Setup for CTAs with data-cal-link
+          window.Cal("ui", {
+            theme: "light",
+            styles: { branding: { brandColor: "#0d9488" } },
+            hideEventTypeDetails: false,
+            layout: "month_view"
+          });
+        }
+      };
+      document.head.appendChild(script);
+    }
+  });
+</script>
