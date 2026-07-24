@@ -30,6 +30,8 @@ services:
       - N8N_PORT=${N8N_PORT}
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=${N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS}
       - N8N_COMMUNITY_PACKAGES_ENABLED=${N8N_COMMUNITY_PACKAGES_ENABLED}
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
       - NODE_FUNCTION_ALLOW_EXTERNAL=${NODE_FUNCTION_ALLOW_EXTERNAL}
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
       - WEBHOOK_URL=${WEBHOOK_URL}
@@ -41,6 +43,7 @@ services:
       - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - ./n8n_data:/home/node/.n8n
+      - ./n8n_workflows:/n8n_workflows:ro
     networks:
       - n8n_network
     depends_on:
