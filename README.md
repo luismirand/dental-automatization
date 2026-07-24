@@ -1,58 +1,311 @@
+# Dental Clinic Automation System
 
-# Sistema de Automatización para Clínica Dental (Agency-as-a-Service)
+> **Agency-as-a-Service Architecture**
 
-Este repositorio contiene la estructura monorepo de un sistema de automatización para una clínica dental, diseñado bajo el modelo de "Agency-as-a-Service". Permite centralizar la captación de pacientes desde la landing page web y desde canales de WhatsApp mediante inteligencia artificial (LLM), agendando citas en Cal.com y persistiendo la información de pacientes en una base de datos PostgreSQL.
+A production-oriented monorepo that demonstrates an end-to-end automation platform for dental clinics. The system centralizes patient acquisition from a web landing page and WhatsApp, automates appointment scheduling through Cal.com, and stores patient information in PostgreSQL using a scalable, low-code architecture powered by n8n.
 
-## Enfoque del Proyecto
+---
 
-El enfoque principal de esta arquitectura es proveer un canal de atención unificado y automatizado que optimice la conversión de citas y la retención de pacientes, reduciendo la carga operativa del personal de recepción. 
+## Overview
 
-Este enfoque se divide en tres pilares esenciales:
-1. **Atención Omnicanal Reactiva**: Los pacientes pueden reservar citas tanto de forma autónoma a través del portal web interactivo como mediante conversaciones guiadas por un bot inteligente en WhatsApp.
-2. **Orquestación Sin Código / Bajo Código**: Toda la lógica de negocio, enrutamiento de mensajes de WhatsApp, e integración con Cal.com y base de datos se realiza a través de flujos de n8n, lo que permite modificar el comportamiento de atención rápidamente sin desplegar código nuevo de backend.
-3. **Persistencia Centralizada**: Los datos de los pacientes, registros de citas e interacciones se almacenan directamente en una base de datos relacional local (PostgreSQL), asegurando la trazabilidad del embudo de ventas y facilitando analíticas posteriores.
+This project is designed to streamline the patient acquisition and appointment booking process while reducing the operational workload of front-desk staff.
 
-## Estructura del Proyecto
+The architecture combines a modern frontend, workflow automation, AI-assisted conversations, and centralized data management into a single platform that can be easily extended or customized for different clinics.
 
-El monorepo está organizado de la siguiente manera:
+### Core Features
 
-* **apps/web-landing/**: Aplicación frontend moderna desarrollada en Astro y Tailwind CSS v4 con componentes interactivos hidratados mediante React (Navbar animado, Slider de antes/después para testimonios, y selector simulado de agenda).
-* **infrastructure/**: Configuración del entorno local mediante Docker Compose, incluyendo PostgreSQL, n8n y los esquemas iniciales de base de datos.
-  * **n8n_workflows/**: Definición de los flujos de integración para WhatsApp, Cal.com y base de datos en formato JSON.
-* **docs/**: Documentación detallada de la arquitectura del sistema, especificaciones de la base de datos y detalles de integración de Cal.com.
-* **scripts/**: Utilidades de soporte y despliegue del proyecto.
+- **Omnichannel Patient Acquisition**
+  - Interactive web landing page
+  - WhatsApp conversational assistant
+  - Unified patient onboarding experience
 
-## Requisitos Previos
+- **AI-Powered Automation**
+  - LLM-assisted conversations
+  - Automated lead qualification
+  - Intelligent appointment scheduling
 
-Para ejecutar y desarrollar en este proyecto, es necesario contar con:
-* Node.js (versión 18 o superior)
-* Docker y Docker Compose
-* Git
+- **Workflow Orchestration**
+  - Built with **n8n**
+  - No-code/low-code automation
+  - Easy integration with external services
 
-## Guía de Inicio Rápido
+- **Appointment Management**
+  - Automated scheduling through **Cal.com**
+  - Calendar synchronization
+  - Booking confirmation workflows
 
-### Frontend (Web Landing)
-1. Navega al directorio de la landing:
-   ```bash
-   cd apps/web-landing
-   ```
-2. Instala las dependencias:
-   ```bash
-   npm install
-   ```
-3. Inicia el servidor de desarrollo:
-   ```bash
-   npm run dev
-   ```
+- **Centralized Data Storage**
+  - PostgreSQL database
+  - Patient records
+  - Appointment history
+  - Interaction logs
 
-### Infraestructura (Base de datos y n8n)
-1. Configura tus variables de entorno copiando el archivo de ejemplo en `infrastructure/.env.example` a `infrastructure/.env`.
-2. Levanta los contenedores de Docker desde la raíz de la infraestructura:
-   ```bash
-   cd infrastructure
-   docker compose up -d
-   ```
-3. Importa los flujos ubicados en `infrastructure/n8n_workflows/` dentro de tu instancia local de n8n para activar el procesamiento de WhatsApp y reservas de Cal.com.
-=======
-# dental-automatization
->>>>>>> 93983da (Initial commit)
+---
+
+# Architecture
+
+The platform is composed of four main layers:
+
+1. **Frontend**
+   - Astro
+   - Tailwind CSS v4
+   - React Islands
+
+2. **Automation Layer**
+   - n8n workflows
+   - AI integrations
+   - Business logic orchestration
+
+3. **Scheduling**
+   - Cal.com API
+   - Automated appointment creation
+
+4. **Persistence**
+   - PostgreSQL
+   - Relational data model
+   - Audit and interaction history
+
+---
+
+# Repository Structure
+
+```text
+.
+├── apps/
+│   └── web-landing/
+│       ├── src/
+│       ├── public/
+│       └── ...
+│
+├── infrastructure/
+│   ├── docker-compose.yml
+│   ├── postgres/
+│   ├── n8n_workflows/
+│   └── ...
+│
+├── docs/
+│   ├── architecture.md
+│   ├── database.md
+│   └── calcom.md
+│
+├── scripts/
+│
+└── README.md
+```
+
+## Directory Description
+
+### `apps/web-landing`
+
+Frontend application developed with:
+
+- Astro
+- Tailwind CSS v4
+- React
+
+Includes:
+
+- Responsive landing page
+- Interactive UI components
+- Appointment selection interface
+- Service presentation
+- Lead generation forms
+
+---
+
+### `infrastructure`
+
+Infrastructure configuration for local development.
+
+Includes:
+
+- Docker Compose
+- PostgreSQL
+- n8n
+- Database initialization scripts
+- Environment configuration
+
+---
+
+### `infrastructure/n8n_workflows`
+
+Contains the workflow definitions responsible for:
+
+- WhatsApp message processing
+- AI conversation flows
+- Patient registration
+- Appointment scheduling
+- Database synchronization
+- External integrations
+
+---
+
+### `docs`
+
+Technical documentation covering:
+
+- System architecture
+- Database schema
+- API integrations
+- Deployment guides
+- Development notes
+
+---
+
+### `scripts`
+
+Utility scripts for:
+
+- Deployment
+- Maintenance
+- Environment setup
+- Development automation
+
+---
+
+# Technology Stack
+
+## Frontend
+
+- Astro
+- React
+- Tailwind CSS v4
+- TypeScript
+
+## Backend & Automation
+
+- n8n
+- AI / LLM Integration
+- Cal.com API
+
+## Database
+
+- PostgreSQL
+
+## Infrastructure
+
+- Docker
+- Docker Compose
+
+---
+
+# Prerequisites
+
+Before running the project, make sure the following software is installed:
+
+- Node.js 18+
+- npm
+- Docker
+- Docker Compose
+- Git
+
+---
+
+# Getting Started
+
+## 1. Clone the Repository
+
+```bash
+git clone <repository-url>
+cd <repository-name>
+```
+
+---
+
+## 2. Run the Frontend
+
+Navigate to the frontend application:
+
+```bash
+cd apps/web-landing
+```
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start the development server:
+
+```bash
+npm run dev
+```
+
+---
+
+## 3. Start the Infrastructure
+
+Navigate to the infrastructure directory:
+
+```bash
+cd infrastructure
+```
+
+Copy the environment variables:
+
+```bash
+cp .env.example .env
+```
+
+Start all services:
+
+```bash
+docker compose up -d
+```
+
+---
+
+## 4. Import n8n Workflows
+
+Open your local n8n instance and import the workflow JSON files located in:
+
+```text
+infrastructure/n8n_workflows/
+```
+
+These workflows enable:
+
+- WhatsApp automation
+- AI processing
+- Cal.com integration
+- PostgreSQL persistence
+
+---
+
+# Development Workflow
+
+1. Start PostgreSQL and n8n using Docker.
+2. Launch the Astro frontend.
+3. Import or update n8n workflows.
+4. Configure API credentials.
+5. Test the complete patient journey.
+
+---
+
+# Project Goals
+
+- Automate patient acquisition.
+- Reduce manual administrative tasks.
+- Improve appointment conversion rates.
+- Centralize patient information.
+- Provide a scalable automation platform for dental clinics.
+
+---
+
+# Future Improvements
+
+- Multi-clinic support
+- CRM integration
+- Payment gateway integration
+- Automated reminders
+- Analytics dashboard
+- Multi-language support
+- Voice AI integration
+- Role-based access control
+
+---
+
+# License
+
+This project is provided as a demonstration of an Agency-as-a-Service architecture for workflow automation in dental clinics. Customize and extend it according to your project's requirements.
