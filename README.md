@@ -1,3 +1,4 @@
+
 # Sistema de Automatización para Clínica Dental (Agency-as-a-Service)
 
 Este repositorio contiene la estructura monorepo de un sistema de automatización para una clínica dental, diseñado bajo el modelo de "Agency-as-a-Service". Permite centralizar la captación de pacientes desde la landing page web y desde canales de WhatsApp mediante inteligencia artificial (LLM), agendando citas en Cal.com y persistiendo la información de pacientes en una base de datos PostgreSQL.
@@ -52,3 +53,6 @@ Para ejecutar y desarrollar en este proyecto, es necesario contar con:
    docker compose up -d
    ```
 3. Importa los flujos ubicados en `infrastructure/n8n_workflows/` dentro de tu instancia local de n8n para activar el procesamiento de WhatsApp y reservas de Cal.com.
+=======
+# dental-automatization
+>>>>>>> 93983da (Initial commit)
