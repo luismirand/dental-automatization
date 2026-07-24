@@ -46,8 +46,18 @@ CREATE TABLE IF NOT EXISTS appointments (
     cal_booking_id VARCHAR(100) UNIQUE,
     start_time TIMESTAMP WITH TIME ZONE NOT NULL,
     end_time TIMESTAMP WITH TIME ZONE NOT NULL,
-    status VARCHAR(30) DEFAULT 'ACCEPTED', -- 'PENDING', 'ACCEPTED', 'CANCELLED'
+    status VARCHAR(30) DEFAULT 'ACCEPTED', -- 'PENDING', 'ACCEPTED', 'CANCELLED', 'RESCHEDULED'
     notes TEXT,
+    -- Classification fields (added in migration 001)
+    appointment_type VARCHAR(60),  -- 'valoracion_inicial' | 'limpieza' | 'ortodoncia' | 'implante' | 'diseno_sonrisa' | 'urgencia' | 'otro'
+    patient_name VARCHAR(120),     -- who attends (may differ from lead)
+    patient_email VARCHAR(120),
+    patient_phone VARCHAR(30),
+    reason_for_visit TEXT,
+    is_first_visit BOOLEAN DEFAULT TRUE,
+    channel VARCHAR(20) DEFAULT 'cal',  -- 'cal' | 'bot_whatsapp' | 'bot_webchat' | 'bot_telegram'
+    cal_event_type_id INTEGER,
+    reschedule_count SMALLINT DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
