@@ -43,10 +43,18 @@ export function CalWidgetPlaceholder() {
                   <p className="mt-1 text-lg font-bold capitalize text-navy">{monthLabel}</p>
                 </div>
                 <div className="flex gap-1">
-                  <button className="grid size-9 place-items-center rounded-lg text-muted-foreground hover:bg-muted">
+                  <button
+                    disabled
+                    title="Navega el mes directamente en Cal.com"
+                    className="grid size-9 place-items-center rounded-lg text-muted-foreground/30 cursor-not-allowed"
+                  >
                     <ChevronLeft className="size-4" />
                   </button>
-                  <button className="grid size-9 place-items-center rounded-lg text-muted-foreground hover:bg-muted">
+                  <button
+                    disabled
+                    title="Navega el mes directamente en Cal.com"
+                    className="grid size-9 place-items-center rounded-lg text-muted-foreground/30 cursor-not-allowed"
+                  >
                     <ChevronRight className="size-4" />
                   </button>
                 </div>

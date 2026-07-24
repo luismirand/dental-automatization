@@ -55,7 +55,7 @@ export function WhatsAppCTA({
   );
 }
 
-/** Floating urgencias button (mobile-first). */
+/** Floating urgencias button (mobile-first). Sits above the ChatWidget trigger. */
 export function FloatingWhatsApp() {
   return (
     <a
@@ -63,7 +63,7 @@ export function FloatingWhatsApp() {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Chatear por WhatsApp"
-      className="fixed bottom-5 right-5 z-40 grid size-14 place-items-center rounded-full bg-whatsapp text-white shadow-elevated ring-4 ring-white transition-transform hover:scale-105"
+      className="fixed bottom-[5rem] right-5 z-40 grid size-14 place-items-center rounded-full bg-whatsapp text-white shadow-elevated ring-4 ring-white transition-transform hover:scale-105"
     >
       <MessageCircle className="size-6" />
     </a>

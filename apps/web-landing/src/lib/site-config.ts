@@ -33,3 +33,10 @@ export const MAPS_DIRECTIONS = `https://www.google.com/maps/dir/?api=1&destinati
   CLINIC.address,
 )}`;
 export const WAZE_DIRECTIONS = `https://waze.com/ul?q=${encodeURIComponent(CLINIC.address)}&navigate=yes`;
+
+// Chat Widget — apunta al webhook de n8n (actualizar si cambia el túnel ngrok)
+export const WEBCHAT_WEBHOOK_URL = "https://drainpipe-latch-frolic.ngrok-free.dev/webhook/webchat";
+
+// Telegram Bot
+export const TELEGRAM_BOT_URL = "https://t.me/Clinica_Smiles_Bot";
+
