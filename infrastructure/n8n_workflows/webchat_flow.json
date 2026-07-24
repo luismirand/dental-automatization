@@ -1,0 +1,189 @@
+{
+  "id": "webchat-llm-flow-01",
+  "name": "WebChat - LLM Assistant (Dental Clinic)",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "webchat",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "wc-1",
+      "name": "WebChat Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "webchat-llm-webhook-id"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM upsert_whatsapp_session('{{ $json.body.sessionId }}', '{{ $json.body.userName || \"Visitante\" }}');",
+        "options": {}
+      },
+      "id": "wc-2",
+      "name": "1. Upsert Session",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [450, 300],
+      "credentials": {
+        "postgres": {
+          "id": "5xCEAI6rBEvMyYE5",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT sender_type, message_text FROM chat_messages WHERE conversation_id = '{{ $json.conversation_id }}' ORDER BY created_at DESC LIMIT 10;",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "id": "wc-3",
+      "name": "2. Get Recent History",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [650, 300],
+      "credentials": {
+        "postgres": {
+          "id": "5xCEAI6rBEvMyYE5",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={{$env.GEMINI_API_KEY}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { contents: [{ role: 'user', parts: [{ text: \"Eres 'Sofía', la asistente virtual de 'Smile Studio' (Av. Reforma 250, Piso 4, CDMX). Tono amable, atento y profesional. El usuario se llama '\" + ($('WebChat Webhook').first().json.body.userName || 'Visitante') + \"'.\\nREGLAS:\\n1. Respuestas CORTAS (máximo 2 a 3 oraciones).\\n2. Solo información de la clínica: Valoración $350 MXN, Limpieza desde $800 MXN, Ortodoncia desde $1,200 MXN/mes, Implantes desde $12,000 MXN, Diseño de Sonrisa desde $3,500 MXN. Horarios: Lun-Vie 09:00-20:00, Sáb 09:00-15:00.\\n3. Nunca recetes medicamentos ni des diagnósticos médicos.\\n4. Si piden hablar con persona: 'Con gusto te conecto con recepción. Puedes llamarnos al +52 55 1234 5678 o por WhatsApp.'\\n5. Usa emojis moderados (😊, 🦷, 📅, 📍).\\n6. PROTOCOLO DE PRE-CLASIFICACIÓN (MUY IMPORTANTE): Cuando el usuario pida agendar una cita, NO des el enlace de inmediato. Primero recopila UN dato por mensaje en este orden: PASO 1: pregunta qué tipo de atención necesita (opciones: Valoración inicial, Limpieza dental, Ortodoncia, Implante dental, Diseño de sonrisa, Urgencia dental, Otro). PASO 2: pregunta si es su primera visita a Smile Studio. PASO 3: pregunta a nombre de quién es la cita. Solo DESPUÉS de los 3 datos, da el enlace: 'https://cal.com/smile-studio — solo necesitas tu email para confirmar 📅'.\\n\\nHISTORIAL RECIENTE:\\n\" + $('2. Get Recent History').all().reverse().map(m => (m.json.sender_type === 'user' ? 'Usuario' : 'Sofía') + ': ' + m.json.message_text).join('\\n') + \"\\n\\nMensaje actual del visitante: \\\"\" + $('WebChat Webhook').first().json.body.message + \"\\\"\" }] }] } }}",
+        "options": {}
+      },
+      "id": "wc-4",
+      "name": "3. Google Gemini (LLM)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO chat_messages (conversation_id, sender_type, message_text) VALUES ('{{ $('1. Upsert Session').first().json.conversation_id }}', 'user', '{{ $('WebChat Webhook').first().json.body.message.replace(\"'\", \"''\") }}'), ('{{ $('1. Upsert Session').first().json.conversation_id }}', 'assistant', '{{ $json.candidates[0].content.parts[0].text.replace(\"'\", \"''\") }}');",
+        "options": {}
+      },
+      "id": "wc-5",
+      "name": "4. Save Chat History",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [1050, 300],
+      "credentials": {
+        "postgres": {
+          "id": "5xCEAI6rBEvMyYE5",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { reply: $('3. Google Gemini (LLM)').first().json.candidates[0].content.parts[0].text } }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "wc-6",
+      "name": "5. Respond to Widget",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1250, 300]
+    }
+  ],
+  "connections": {
+    "WebChat Webhook": {
+      "main": [
+        [
+          {
+            "node": "1. Upsert Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Upsert Session": {
+      "main": [
+        [
+          {
+            "node": "2. Get Recent History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Get Recent History": {
+      "main": [
+        [
+          {
+            "node": "3. Google Gemini (LLM)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Google Gemini (LLM)": {
+      "main": [
+        [
+          {
+            "node": "4. Save Chat History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Save Chat History": {
+      "main": [
+        [
+          {
+            "node": "5. Respond to Widget",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  }
+}

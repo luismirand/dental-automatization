@@ -1,158 +1,66 @@
 {
-  "name": "Cal.com - Booking Tool for LLM",
+  "id": "calcom-booking-flow-01",
+  "name": "Cal.com - Booking Webhook → PostgreSQL",
+  "active": true,
   "nodes": [
     {
       "parameters": {
-        "path": "llm-booking-trigger",
-        "responseMode": "lastNode",
+        "httpMethod": "POST",
+        "path": "calcom-booking",
+        "responseMode": "onReceived",
         "options": {}
       },
-      "id": "1",
-      "name": "Webhook (From LLM)",
+      "id": "cal-1",
+      "name": "Cal.com Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [250, 300]
+      "position": [250, 300],
+      "webhookId": "calcom-booking-webhook-id",
+      "notes": "responseMode=onReceived auto-responde 200 OK a Cal.com. El flujo continúa en segundo plano."
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.cal.com/v1/bookings",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"eventTypeId\": 123456,\n  \"start\": \"{{ $json.body.start }}\",\n  \"end\": \"{{ $json.body.end }}\",\n  \"responses\": {\n    \"name\": \"{{ $json.body.name }}\",\n    \"email\": \"{{ $json.body.email }}\",\n    \"location\": \"WhatsApp\"\n  },\n  \"timeZone\": \"America/Mexico_City\"\n}",
-        "options": {}
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\nconst event = body.triggerEvent || 'BOOKING_CREATED';\nconst payload = body.payload || body;\nconst attendee = (payload.attendees || [])[0] || {};\nconst responses = payload.responses || payload.bookingFieldsResponses || {};\n\nfunction getVal(key) {\n  const field = responses[key];\n  if (!field) return null;\n  if (typeof field === 'object' && field.value !== undefined) return field.value;\n  return field;\n}\n\nconst typeRaw = getVal('tipo_de_cita') || getVal('appointment_type') || 'otro';\nconst typeMap = {\n  'valoracion inicial': 'valoracion_inicial', 'valoracion': 'valoracion_inicial',\n  'limpieza': 'limpieza', 'ortodoncia': 'ortodoncia',\n  'implante': 'implante', 'implantes': 'implante',\n  'diseno de sonrisa': 'diseno_sonrisa', 'diseño de sonrisa': 'diseno_sonrisa',\n  'urgencia': 'urgencia', 'urgencia dental': 'urgencia', 'otro': 'otro'\n};\nconst appointmentType = typeMap[(typeRaw || '').toLowerCase()] || 'otro';\n\nconst firstVisitRaw = getVal('primera_visita') || getVal('is_first_visit');\nconst isFirstVisit = firstVisitRaw === null ? true\n  : ['sí', 'si', 'yes', 'true', '1'].includes(String(firstVisitRaw).toLowerCase());\n\nreturn [{ json: {\n  triggerEvent: event,\n  calBookingId: String(payload.uid || payload.id || ''),\n  calEventTypeId: payload.eventTypeId || null,\n  startTime: payload.startTime || payload.start_time,\n  endTime: payload.endTime || payload.end_time,\n  patientName: getVal('nombre_del_paciente') || attendee.name || getVal('name') || '',\n  patientEmail: attendee.email || getVal('email') || '',\n  patientPhone: attendee.phoneNumber || getVal('phone') || '',\n  appointmentType,\n  isFirstVisit,\n  reasonForVisit: getVal('motivo_de_consulta') || getVal('notes') || null,\n  status: event === 'BOOKING_CANCELLED' ? 'CANCELLED' : event === 'BOOKING_RESCHEDULED' ? 'RESCHEDULED' : 'ACCEPTED'\n}}];"
       },
-      "id": "2",
-      "name": "HTTP: Create Booking",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [450, 300],
-      "credentials": {
-        "httpQueryAuth": {
-          "id": "calcom-api-key",
-          "name": "Cal.com API Key"
-        }
-      },
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "string": [
-            {
-              "value1": "={{ $json.error }}",
-              "operation": "isEmpty"
-            }
-          ]
-        }
-      },
-      "id": "3",
-      "name": "If Success",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
-      "position": [650, 300]
+      "id": "cal-2",
+      "name": "Parse Cal.com Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO appointments (lead_id, cal_booking_id, start_time, end_time, status) VALUES ($1, $2, $3, $4, 'ACCEPTED');",
-        "options": {
-          "queryParameters": "={{ $('Webhook (From LLM)').item.json.body.lead_id }}, {{ $json.id }}, {{ $json.start }}, {{ $json.end }}"
-        }
+        "query": "INSERT INTO leads (phone_number, full_name, email) VALUES (COALESCE(NULLIF('{{ $json.patientPhone }}', ''), 'cal_' || gen_random_uuid()::text), '{{ $json.patientName }}', NULLIF('{{ $json.patientEmail }}', '')) ON CONFLICT (phone_number) DO UPDATE SET full_name = EXCLUDED.full_name, email = COALESCE(EXCLUDED.email, leads.email), updated_at = NOW() RETURNING id;",
+        "options": {}
       },
-      "id": "4",
-      "name": "Save to DB (Success)",
+      "id": "cal-3",
+      "name": "Upsert Lead",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.3,
-      "position": [850, 200],
-      "credentials": {
-        "postgres": {
-          "id": "postgres-cred-id",
-          "name": "Postgres account"
-        }
-      }
+      "position": [650, 300],
+      "credentials": { "postgres": { "id": "5xCEAI6rBEvMyYE5", "name": "Postgres account" } }
     },
     {
       "parameters": {
-        "keepOnlySet": true,
-        "values": {
-          "string": [
-            {
-              "name": "booking_status",
-              "value": "FAILED"
-            },
-            {
-              "name": "error_message",
-              "value": "El horario solicitado ya fue ocupado o es inválido. Por favor, ofrezca otro horario al paciente."
-            }
-          ]
-        },
+        "operation": "executeQuery",
+        "query": "INSERT INTO appointments (lead_id, cal_booking_id, cal_event_type_id, start_time, end_time, status, appointment_type, patient_name, patient_email, patient_phone, reason_for_visit, is_first_visit, channel, reschedule_count) VALUES ('{{ $('Upsert Lead').first().json.id }}', NULLIF('{{ $('Parse Cal.com Payload').first().json.calBookingId }}', ''), {{ $('Parse Cal.com Payload').first().json.calEventTypeId || 'NULL' }}, '{{ $('Parse Cal.com Payload').first().json.startTime }}', '{{ $('Parse Cal.com Payload').first().json.endTime }}', '{{ $('Parse Cal.com Payload').first().json.status }}', '{{ $('Parse Cal.com Payload').first().json.appointmentType }}', '{{ $('Parse Cal.com Payload').first().json.patientName }}', NULLIF('{{ $('Parse Cal.com Payload').first().json.patientEmail }}', ''), NULLIF('{{ $('Parse Cal.com Payload').first().json.patientPhone }}', ''), NULLIF('{{ $('Parse Cal.com Payload').first().json.reasonForVisit }}', ''), {{ $('Parse Cal.com Payload').first().json.isFirstVisit }}, 'cal', 0) ON CONFLICT (cal_booking_id) DO UPDATE SET status = EXCLUDED.status, reschedule_count = appointments.reschedule_count + CASE WHEN EXCLUDED.status = 'RESCHEDULED' THEN 1 ELSE 0 END, start_time = EXCLUDED.start_time, end_time = EXCLUDED.end_time;",
         "options": {}
       },
-      "id": "5",
-      "name": "Return Error to LLM",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 2,
-      "position": [850, 400]
+      "id": "cal-4",
+      "name": "Upsert Appointment",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [850, 300],
+      "credentials": { "postgres": { "id": "5xCEAI6rBEvMyYE5", "name": "Postgres account" } }
     }
   ],
   "connections": {
-    "Webhook (From LLM)": {
-      "main": [
-        [
-          {
-            "node": "HTTP: Create Booking",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Cal.com Webhook": {
+      "main": [[{ "node": "Parse Cal.com Payload", "type": "main", "index": 0 }]]
     },
-    "HTTP: Create Booking": {
-      "main": [
-        [
-          {
-            "node": "If Success",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "If Success",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "If Success": {
-      "main": [
-        [
-          {
-            "node": "Save to DB (Success)",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Return Error to LLM",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
+    "Parse Cal.com Payload": { "main": [[{ "node": "Upsert Lead", "type": "main", "index": 0 }]] },
+    "Upsert Lead": { "main": [[{ "node": "Upsert Appointment", "type": "main", "index": 0 }]] }
   },
-  "settings": {}
+  "settings": { "executionOrder": "v1", "saveDataErrorExecution": "all", "saveDataSuccessExecution": "all" }
 }

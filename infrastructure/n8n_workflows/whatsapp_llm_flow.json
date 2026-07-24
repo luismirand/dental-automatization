@@ -1,26 +1,53 @@
 {
+  "id": "whatsapp-llm-flow-01",
   "name": "WhatsApp - LLM Assistant (Dental Clinic)",
+  "active": true,
   "nodes": [
     {
       "parameters": {
+        "httpMethod": "GET",
         "path": "whatsapp",
-        "responseMode": "lastNode",
+        "responseMode": "responseNode",
         "options": {}
       },
       "id": "1",
-      "name": "WhatsApp Webhook",
+      "name": "WhatsApp Verification (GET)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [250, 300],
+      "position": [250, 150],
+      "webhookId": "whatsapp-llm-get-webhook-id"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.query['hub.challenge'] }}",
+        "options": {}
+      },
+      "id": "1-verify",
+      "name": "Respond Challenge",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [450, 150]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "1-post",
+      "name": "WhatsApp Webhook (POST)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 350],
       "webhookId": "whatsapp-llm-webhook-id"
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT * FROM upsert_whatsapp_session($1, $2);",
-        "options": {
-          "queryParameters": "={{ $json.body.entry[0].changes[0].value.messages[0].from }}, {{ $json.body.entry[0].changes[0].value.contacts[0].profile.name }}"
-        }
+        "query": "SELECT * FROM upsert_whatsapp_session('{{ ($json.body || $json).entry[0].changes[0].value.messages[0].from }}', '{{ (($json.body || $json).entry[0].changes[0].value.contacts[0] || {}).profile?.name || \"Paciente\" }}');",
+        "options": {}
       },
       "id": "2",
       "name": "1. Upsert Session (Lock)",
@@ -29,7 +56,7 @@
       "position": [450, 300],
       "credentials": {
         "postgres": {
-          "id": "postgres-cred-id",
+          "id": "5xCEAI6rBEvMyYE5",
           "name": "Postgres account"
         }
       }
@@ -37,11 +64,10 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT sender_type, message_text FROM chat_messages WHERE conversation_id = $1 ORDER BY created_at DESC LIMIT 10;",
-        "options": {
-          "queryParameters": "={{ $json.conversation_id }}"
-        }
+        "query": "SELECT sender_type, message_text FROM chat_messages WHERE conversation_id = '{{ $json.conversation_id }}' ORDER BY created_at DESC LIMIT 10;",
+        "options": {}
       },
+      "alwaysOutputData": true,
       "id": "3",
       "name": "2. Get Recent History",
       "type": "n8n-nodes-base.postgres",
@@ -49,31 +75,40 @@
       "position": [650, 300],
       "credentials": {
         "postgres": {
-          "id": "postgres-cred-id",
+          "id": "5xCEAI6rBEvMyYE5",
           "name": "Postgres account"
         }
       }
     },
     {
       "parameters": {
-        "model": "gemini-1.5-flash",
-        "options": {
-          "systemMessage": "Eres el asistente virtual de la Clínica Dental Sonrisa Real. Eres amable, profesional y conciso. Tu objetivo es ayudar a los pacientes a resolver dudas sobre servicios (ortodoncia, implantes, diseño de sonrisa) y guiarlos para agendar una cita. Utiliza respuestas cortas y claras para WhatsApp."
-        }
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={{$env.GEMINI_API_KEY}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { contents: [{ role: 'user', parts: [{ text: \"Eres 'Sofía', la asistente virtual de 'Smile Studio' (Av. Reforma 250, Piso 4, CDMX). Tono amable, atento y profesional. Canal: WhatsApp. REGLAS:\\n1. Respuestas CORTAS (máx 2-3 oraciones).\\n2. Solo información de la clínica: Valoración $350 MXN, Limpieza desde $800 MXN, Ortodoncia desde $1,200 MXN/mes, Implantes desde $12,000 MXN, Diseño de Sonrisa desde $3,500 MXN. Horarios: Lun-Vie 09:00-20:00, Sáb 09:00-15:00.\\n3. Nunca recetes medicamentos ni des diagnósticos.\\n4. Si piden hablar con persona o muestran molestia responde: '[HANDOVER_HUMANO] Te transfiero con nuestra recepción en este momento.'\\n5. Usa emojis moderados (😁, 🦷, 📍, 📅).\\n6. PROTOCOLO DE PRE-CLASIFICACIÓN (MUY IMPORTANTE): Cuando el usuario pida agendar una cita, NO des el enlace de inmediato. Recopila UN dato por mensaje en este orden: PASO 1: tipo de atención (opciones: Valoración inicial, Limpieza dental, Ortodoncia, Implante dental, Diseño de sonrisa, Urgencia dental, Otro). PASO 2: ¿es su primera visita? PASO 3: nombre del paciente. Solo DESPUÉS da el enlace: 'https://cal.com/smile-studio — solo necesitas tu email para confirmar 📅'.\\n\\nHISTORIAL RECIENTE:\\n\" + $('2. Get Recent History').all().reverse().map(m => (m.json.sender_type === 'user' ? 'Paciente' : 'Sofía') + ': ' + m.json.message_text).join('\\n') + \"\\n\\nMensaje actual del paciente: \\\"\" + (($('WhatsApp Webhook (POST)').first().json.body || $('WhatsApp Webhook (POST)').first().json).entry[0].changes[0].value.messages[0].text.body) + \"\\\"\" }] }] } }}",
+        "options": {}
       },
       "id": "4",
       "name": "3. Google Gemini (LLM)",
-      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
       "position": [850, 300]
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO chat_messages (conversation_id, sender_type, message_text) VALUES ($1, 'user', $2), ($1, 'assistant', $3);",
-        "options": {
-          "queryParameters": "={{ $('1. Upsert Session (Lock)').item.json.conversation_id }}, {{ $('WhatsApp Webhook').item.json.body.entry[0].changes[0].value.messages[0].text.body }}, {{ $json.output }}"
-        }
+        "query": "INSERT INTO chat_messages (conversation_id, sender_type, message_text) VALUES ('{{ $('1. Upsert Session (Lock)').first().json.conversation_id }}', 'user', '{{ ($('WhatsApp Webhook (POST)').first().json.body || $('WhatsApp Webhook (POST)').first().json).entry[0].changes[0].value.messages[0].text.body }}'), ('{{ $('1. Upsert Session (Lock)').first().json.conversation_id }}', 'assistant', '{{ $json.candidates[0].content.parts[0].text }}');",
+        "options": {}
       },
       "id": "5",
       "name": "4. Save Chat History",
@@ -82,14 +117,53 @@
       "position": [1050, 300],
       "credentials": {
         "postgres": {
-          "id": "postgres-cred-id",
+          "id": "5xCEAI6rBEvMyYE5",
           "name": "Postgres account"
         }
       }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v25.0/{{ $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.WHATSAPP_SYSTEM_USER_PERMANENT_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"recipient_type\": \"individual\",\n  \"to\": \"{{ ($('WhatsApp Webhook (POST)').first().json.body || $('WhatsApp Webhook (POST)').first().json).entry[0].changes[0].value.messages[0].from }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"preview_url\": false,\n    \"body\": \"{{ $('3. Google Gemini (LLM)').first().json.candidates[0].content.parts[0].text }}\"\n  }\n}",
+        "options": {}
+      },
+      "id": "6",
+      "name": "5. Send WhatsApp Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1250, 300]
     }
   ],
   "connections": {
-    "WhatsApp Webhook": {
+    "WhatsApp Verification (GET)": {
+      "main": [
+        [
+          {
+            "node": "Respond Challenge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp Webhook (POST)": {
       "main": [
         [
           {
@@ -127,6 +201,17 @@
         [
           {
             "node": "4. Save Chat History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Save Chat History": {
+      "main": [
+        [
+          {
+            "node": "5. Send WhatsApp Message",
             "type": "main",
             "index": 0
           }

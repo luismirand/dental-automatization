@@ -1,0 +1,222 @@
+{
+  "id": "telegram-llm-flow-01",
+  "name": "Telegram - LLM Assistant (Dental Clinic)",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "updates": ["message"],
+        "additionalFields": {}
+      },
+      "id": "tg-1",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300],
+      "webhookId": "telegram-llm-webhook-id",
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-bot-credentials",
+          "name": "Telegram Bot - Clinica Smiles"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false
+          },
+          "conditions": [
+            {
+              "id": "check-text",
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ]
+        }
+      },
+      "id": "tg-filter",
+      "name": "Filter: Only Text Messages",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM upsert_whatsapp_session('tg_{{ $json.message.from.id }}', '{{ $json.message.from.first_name || \"Paciente\" }}');",
+        "options": {}
+      },
+      "id": "tg-2",
+      "name": "1. Upsert Session",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [650, 300],
+      "credentials": {
+        "postgres": {
+          "id": "5xCEAI6rBEvMyYE5",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT sender_type, message_text FROM chat_messages WHERE conversation_id = '{{ $json.conversation_id }}' ORDER BY created_at DESC LIMIT 10;",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "id": "tg-3",
+      "name": "2. Get Recent History",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [850, 300],
+      "credentials": {
+        "postgres": {
+          "id": "5xCEAI6rBEvMyYE5",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={{$env.GEMINI_API_KEY}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { contents: [{ role: 'user', parts: [{ text: \"Eres 'Sofía', la asistente virtual de 'Smile Studio' (Av. Reforma 250, Piso 4, CDMX). Canal: Telegram. El paciente se llama '\" + ($('Telegram Trigger').first().json.message.from.first_name || 'Paciente') + \"'. Tono amable, atento y profesional. REGLAS:\\n1. Respuestas CORTAS (máximo 2 a 3 oraciones).\\n2. Solo información de la clínica: Valoración $350 MXN, Limpieza desde $800 MXN, Ortodoncia desde $1,200 MXN/mes, Implantes desde $12,000 MXN, Diseño de Sonrisa desde $3,500 MXN. Horarios: Lun-Vie 09:00-20:00, Sáb 09:00-15:00.\\n3. Nunca recetes medicamentos ni des diagnósticos.\\n4. Si piden hablar con persona: 'Con gusto te conecto con recepción al +52 55 1234 5678.'\\n5. Usa emojis moderados (😊, 🦷, 📅, 📍).\\n6. PROTOCOLO DE PRE-CLASIFICACIÓN (MUY IMPORTANTE): Cuando el usuario pida agendar una cita, NO des el enlace de inmediato. Recopila UN dato por mensaje en este orden: PASO 1: tipo de atención (opciones: Valoración inicial, Limpieza dental, Ortodoncia, Implante dental, Diseño de sonrisa, Urgencia dental, Otro). PASO 2: ¿es su primera visita? PASO 3: nombre del paciente. Solo DESPUÉS da el enlace: 'https://cal.com/smile-studio — solo necesitas tu email para confirmar 📅'.\\n\\nHISTORIAL RECIENTE:\\n\" + $('2. Get Recent History').all().reverse().map(m => (m.json.sender_type === 'user' ? 'Paciente' : 'Sofía') + ': ' + m.json.message_text).join('\\n') + \"\\n\\nMensaje actual del paciente: \\\"\" + $('Telegram Trigger').first().json.message.text + \"\\\"\" }] }] } }}",
+        "options": {}
+      },
+      "id": "tg-4",
+      "name": "3. Google Gemini (LLM)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO chat_messages (conversation_id, sender_type, message_text) VALUES ('{{ $('1. Upsert Session').first().json.conversation_id }}', 'user', '{{ $('Telegram Trigger').first().json.message.text.replace(\"'\", \"''\") }}'), ('{{ $('1. Upsert Session').first().json.conversation_id }}', 'assistant', '{{ $json.candidates[0].content.parts[0].text.replace(\"'\", \"''\") }}');",
+        "options": {}
+      },
+      "id": "tg-5",
+      "name": "4. Save Chat History",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [1250, 300],
+      "credentials": {
+        "postgres": {
+          "id": "5xCEAI6rBEvMyYE5",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "text": "={{ $('3. Google Gemini (LLM)').first().json.candidates[0].content.parts[0].text }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "tg-6",
+      "name": "5. Send Telegram Reply",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1450, 300],
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-bot-credentials",
+          "name": "Telegram Bot - Clinica Smiles"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Filter: Only Text Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter: Only Text Messages": {
+      "main": [
+        [
+          {
+            "node": "1. Upsert Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Upsert Session": {
+      "main": [
+        [
+          {
+            "node": "2. Get Recent History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Get Recent History": {
+      "main": [
+        [
+          {
+            "node": "3. Google Gemini (LLM)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Google Gemini (LLM)": {
+      "main": [
+        [
+          {
+            "node": "4. Save Chat History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Save Chat History": {
+      "main": [
+        [
+          {
+            "node": "5. Send Telegram Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  }
+}
