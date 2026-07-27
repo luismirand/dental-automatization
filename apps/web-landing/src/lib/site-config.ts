@@ -22,7 +22,7 @@ export const WHATSAPP_URGENT_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${enco
   "Hola, tengo una urgencia dental y necesito atención hoy mismo.",
 )}`;
 
-export const CAL_USER = "smile-studio";
+export const CAL_USER = "luis-miranda";
 export const CAL_URL = `https://cal.com/${CAL_USER}`;
 
 // Google Maps embed (no API key required)
@@ -35,7 +35,9 @@ export const MAPS_DIRECTIONS = `https://www.google.com/maps/dir/?api=1&destinati
 export const WAZE_DIRECTIONS = `https://waze.com/ul?q=${encodeURIComponent(CLINIC.address)}&navigate=yes`;
 
 // Chat Widget — apunta al webhook de n8n (actualizar si cambia el túnel ngrok)
-export const WEBCHAT_WEBHOOK_URL = "https://drainpipe-latch-frolic.ngrok-free.dev/webhook/webchat";
+//export const WEBCHAT_WEBHOOK_URL = "https://drainpipe-latch-frolic.ngrok-free.dev/webhook/webchat";
+// Chat Widget — apunta directamente a n8n local para evitar bloqueos CORS de ngrok
+export const WEBCHAT_WEBHOOK_URL = "http://localhost:5678/webhook/webchat";
 
 // Telegram Bot
 export const TELEGRAM_BOT_URL = "https://t.me/Clinica_Smiles_Bot";

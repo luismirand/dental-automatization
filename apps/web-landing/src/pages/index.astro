@@ -7,7 +7,7 @@ import { ServicesGrid } from '../components/site/ServicesGrid';
 import { Pricing } from '../components/site/Pricing';
 import { Doctors } from '../components/site/Doctors';
 import { Testimonials } from '../components/site/Testimonials';
-import { CalWidgetPlaceholder } from '../components/site/CalWidgetPlaceholder';
+import CalEmbed from '../components/CalEmbed.astro';
 import { FAQ } from '../components/site/FAQ';
 import { LocationFooter } from '../components/site/LocationFooter';
 import { FloatingWhatsApp } from '../components/site/WhatsAppCTA';
@@ -26,7 +26,7 @@ import { ChatWidget } from '../components/site/ChatWidget';
     <Pricing />
     <Doctors />
     <Testimonials client:load />
-    <CalWidgetPlaceholder client:load />
+    <CalEmbed calLink="luis-miranda" />
     <FAQ />
   </main>
   <LocationFooter />
