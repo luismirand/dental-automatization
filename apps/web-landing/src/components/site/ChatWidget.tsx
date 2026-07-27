@@ -220,22 +220,37 @@ export function ChatWidget() {
     setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
 
+    // Timeout de 60 segundos para LLMs que pueden tardar
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60_000);
+
     try {
       const res = await fetch(WEBCHAT_WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId, userName: userName ?? "Visitante", message: text.trim() }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const replyText =
         data?.reply ??
         "Lo siento, tuve un problema técnico. Por favor intenta de nuevo o escríbenos al WhatsApp 😊";
       setMessages((prev) => [...prev, { id: `b_${Date.now()}`, role: "assistant", text: replyText, ts: Date.now() }]);
-    } catch {
+    } catch (err: unknown) {
+      clearTimeout(timeoutId);
+      const isTimeout = err instanceof Error && err.name === "AbortError";
       setMessages((prev) => [
         ...prev,
-        { id: `e_${Date.now()}`, role: "assistant", text: "¡Ups! 😅 Algo salió mal. Por favor intenta de nuevo.", ts: Date.now() },
+        {
+          id: `e_${Date.now()}`,
+          role: "assistant",
+          text: isTimeout
+            ? "¡Sofía está pensando! ⏳ La respuesta tardó demasiado. Por favor intenta de nuevo."
+            : "¡Ups! 😅 Algo salió mal. Por favor intenta de nuevo.",
+          ts: Date.now()
+        },
       ]);
     } finally {
       setLoading(false);

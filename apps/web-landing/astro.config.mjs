@@ -8,6 +8,16 @@ import react from '@astrojs/react';
 export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
+    server: {
+      proxy: {
+        // Proxy /api/webchat → n8n webhook (evita problemas CORS cross-origin en el browser)
+        '/api/webchat': {
+          target: 'http://localhost:5678',
+          rewrite: (path) => path.replace(/^\/api\/webchat/, '/webhook/webchat'),
+          changeOrigin: true,
+        },
+      },
+    },
   },
 
   integrations: [react()],

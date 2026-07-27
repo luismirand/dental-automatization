@@ -34,9 +34,7 @@ export const MAPS_DIRECTIONS = `https://www.google.com/maps/dir/?api=1&destinati
 )}`;
 export const WAZE_DIRECTIONS = `https://waze.com/ul?q=${encodeURIComponent(CLINIC.address)}&navigate=yes`;
 
-// Chat Widget — apunta al webhook de n8n (actualizar si cambia el túnel ngrok)
-//export const WEBCHAT_WEBHOOK_URL = "https://drainpipe-latch-frolic.ngrok-free.dev/webhook/webchat";
-// Chat Widget — apunta directamente a n8n local para evitar bloqueos CORS de ngrok
+// Chat Widget — apunta directamente a n8n (CORS confirmado OK con Access-Control-Allow-Origin: *)
 export const WEBCHAT_WEBHOOK_URL = "http://localhost:5678/webhook/webchat";
 
 // Telegram Bot
