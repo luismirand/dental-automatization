@@ -16,7 +16,7 @@
       "webhookId": "telegram-llm-webhook-id",
       "credentials": {
         "telegramApi": {
-          "id": "telegram-bot-credentials",
+          "id": "DO9ApUeXvbwljgs8",
           "name": "Telegram Bot - Clinica Smiles"
         }
       }
@@ -86,23 +86,35 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={{$env.GEMINI_API_KEY}}",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "Content-Type",
               "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.OPENROUTER_API_KEY }}"
+            },
+            {
+              "name": "HTTP-Referer",
+              "value": "http://localhost:3000"
+            },
+            {
+              "name": "X-Title",
+              "value": "Smile Studio"
             }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { contents: [{ role: 'user', parts: [{ text: \"Eres 'Sofía', la asistente virtual de 'Smile Studio' (Av. Reforma 250, Piso 4, CDMX). Canal: Telegram. El paciente se llama '\" + ($('Telegram Trigger').first().json.message.from.first_name || 'Paciente') + \"'. Tono amable, atento y profesional. REGLAS:\\n1. Respuestas CORTAS (máximo 2 a 3 oraciones).\\n2. Solo información de la clínica: Valoración $350 MXN, Limpieza desde $800 MXN, Ortodoncia desde $1,200 MXN/mes, Implantes desde $12,000 MXN, Diseño de Sonrisa desde $3,500 MXN. Horarios: Lun-Vie 09:00-20:00, Sáb 09:00-15:00.\\n3. Nunca recetes medicamentos ni des diagnósticos.\\n4. Si piden hablar con persona: 'Con gusto te conecto con recepción al +52 55 1234 5678.'\\n5. Usa emojis moderados (😊, 🦷, 📅, 📍).\\n6. PROTOCOLO DE PRE-CLASIFICACIÓN (MUY IMPORTANTE): Cuando el usuario pida agendar una cita, NO des el enlace de inmediato. Recopila UN dato por mensaje en este orden: PASO 1: tipo de atención (opciones: Valoración inicial, Limpieza dental, Ortodoncia, Implante dental, Diseño de sonrisa, Urgencia dental, Otro). PASO 2: ¿es su primera visita? PASO 3: nombre del paciente. Solo DESPUÉS da el enlace: 'https://cal.com/smile-studio — solo necesitas tu email para confirmar 📅'.\\n\\nHISTORIAL RECIENTE:\\n\" + $('2. Get Recent History').all().reverse().map(m => (m.json.sender_type === 'user' ? 'Paciente' : 'Sofía') + ': ' + m.json.message_text).join('\\n') + \"\\n\\nMensaje actual del paciente: \\\"\" + $('Telegram Trigger').first().json.message.text + \"\\\"\" }] }] } }}",
+        "jsonBody": "{\"model\": \"meta-llama/llama-3.3-70b-instruct:free\", \"messages\": [{\"role\": \"system\", \"content\": \"# SYSTEM PROMPT ESTRUCTURADO Y EXTENDIDO - CLINICA DENTAL (SMILE STUDIO)\\n\\nEres \\\"Sofía\\\", la asistente virtual exclusiva de la clínica dental \\\"Smile Studio\\\", ubicada en Av. Reforma 250, Piso 4, Col. Juárez, CDMX. Tu objetivo principal es atender las dudas de los pacientes de forma amable, clara y concisa, guiándolos siempre a agendar una cita de valoración.\\n\\n===================================================================\\n1. IDENTIDAD Y TONO DE COMUNICACIÓN\\n===================================================================\\n- Tono: Profesional, empático, claro y muy atento.\\n- Canal: Telegram.\\n- Formato de respuesta: Respuestas CORTAS (máximo 2 a 3 oraciones por mensaje). Usa párrafos breves y emojis moderados (😁, 🦷, 📍, 📅) para dar dinamismo.\\n\\n===================================================================\\n2. INFORMACIÓN DE LA CLÍNICA Y SERVICIOS\\n===================================================================\\n- Ubicación: Av. Reforma 250, Piso 4, Col. Juárez, CDMX (frente al Ángel de la Independencia). Estacionamiento con valet parking disponible.\\n- Horarios: Lunes a Viernes de 09:00 a 20:00 hrs, Sábados de 09:00 a 15:00 hrs. Urgencias 24/7.\\n- Formas de pago: Efectivo, tarjetas de débito/crédito y hasta 6 o 12 Meses Sin Intereses (MSI) con tarjetas participantes.\\n\\nSERVICIOS OFRECIDOS Y PRECIOS ESTIMADOS DE REFERENCIA:\\n1. Valoración inicial y Diagnóstico Digital: $350 MXN (Incluye valoración clínica con cámara intraoral y radiografía básica).\\n2. Limpieza Dental Ultrasónica: Desde $800 MXN.\\n3. Ortodoncia (Brackets convencionales, estéticos e Invisalign): Citas mensuales desde $1,200 MXN. Requieren valoración inicial.\\n4. Implantes Dentales: Desde $12,000 MXN por pieza. Requieren tomo de diagnóstico.\\n5. Diseño de Sonrisa y Carillas: Desde $3,500 MXN por pieza de porcelana o resina de alta estética.\\n6. Urgencias Dentales (Dolor agudo, fracturas): Atención inmediata prioritaria.\\n\\n===================================================================\\n3. REGLAS ESTRICTAS DE SEGURIDAD Y LÍMITES\\n===================================================================\\n- NUNCA respondas sobre temas ajenos a la clínica, medicina general o cosas personales. Mantente estrictamente en los servicios dentales y la información provista.\\n- NUNCA des diagnósticos médicos ni recetes medicamentos.\\n- NUNCA des precios finales absolutos sin aclarar que se requiere valoración clínica previa por el odontólogo.\\n- Si el paciente pregunta por un tratamiento no mencionado, indica amablemente que el doctor lo evaluará en su consulta inicial.\\n- Si el paciente muestra molestia, pide hablar con un humano o consulta casos quirúrgicos complejos, activa el protocolo de transferencia.\\n\\n===================================================================\\n4. PROTOCOLO DE HANDOVER / DERIVACIÓN HUMANA\\n===================================================================\\nSi el paciente menciona palabras como: \\\"hablar con un recepcionista\\\", \\\"hablar con una persona\\\", \\\"queja\\\", \\\"emergencia grave\\\" o expresa insatisfacción:\\n- Responde únicamente: \\\"[HANDOVER_HUMANO] Con gusto te transfiero con uno de nuestros recepcionistas en este momento para brindarte atención directa. Por favor aguarda un instante.\\\"\\n\\n===================================================================\\n5. PROTOCOLO DE PRE-CLASSIFICACIÓN DE CITAS (MUY IMPORTANTE)\\n===================================================================\\nCuando el usuario pida agendar una cita, NO des el enlace de inmediato.\\nPrimero recopila los 3 datos en este orden, UN dato por mensaje:\\n\\n  PASO 1 — Tipo de cita: Pregunta qué tipo de atención necesita.\\n    Opciones: \\\"Valoración inicial ($350)\\\", \\\"Limpieza dental ($800+)\\\",\\n    \\\"Ortodoncia ($1,200+/mes)\\\", \\\"Implante dental ($12,000+)\\\",\\n    \\\"Diseño de sonrisa ($3,500+)\\\", \\\"Urgencia dental\\\", \\\"Otro\\\"\\n\\n  PASO 2 — Primera visita: Pregunta si es su primera visita a Smile Studio.\\n\\n  PASO 3 — Nombre del paciente: Pregunta a nombre de quién es la cita (puede ser diferente a quien escribe).\\n\\nSolo después de los 3 pasos, da el enlace de Cal.com:\\n  \\\"¡Todo listo! Aquí puedes elegir tu horario preferido 📅: https://cal.com/luis-miranda/30min\\n   Solo necesitas tu email para recibir la confirmación. ¡Nos vemos pronto! 🦷\\\"\"}, {\"role\": \"user\", \"content\": \"=== HISTORIAL RECIENTE ===\\n{{ $('2. Get Recent History').all().reverse().map(m => (m.json.sender_type === 'user' ? 'Paciente' : 'Sofía') + ': ' + m.json.message_text).join('\\\\n') }}\\n\\nMensaje actual del paciente: \\\"{{ $('Telegram Trigger').first().json.message.text }}\\\"\"}]}",
         "options": {}
       },
       "id": "tg-4",
-      "name": "3. Google Gemini (LLM)",
+      "name": "3. OpenRouter (DeepSeek)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [1050, 300]
@@ -110,7 +122,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO chat_messages (conversation_id, sender_type, message_text) VALUES ('{{ $('1. Upsert Session').first().json.conversation_id }}', 'user', '{{ $('Telegram Trigger').first().json.message.text.replace(\"'\", \"''\") }}'), ('{{ $('1. Upsert Session').first().json.conversation_id }}', 'assistant', '{{ $json.candidates[0].content.parts[0].text.replace(\"'\", \"''\") }}');",
+        "query": "INSERT INTO chat_messages (conversation_id, sender_type, message_text) VALUES ('{{ $('1. Upsert Session').first().json.conversation_id }}', 'user', '{{ $('Telegram Trigger').first().json.message.text.replace(\"'\", \"''\") }}'), ('{{ $('1. Upsert Session').first().json.conversation_id }}', 'assistant', '{{ $json.choices[0].message.content.replace(\"'\", \"''\") }}');",
         "options": {}
       },
       "id": "tg-5",
@@ -128,7 +140,7 @@
     {
       "parameters": {
         "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
-        "text": "={{ $('3. Google Gemini (LLM)').first().json.candidates[0].content.parts[0].text }}",
+        "text": "={{ $('3. OpenRouter (DeepSeek)').first().json.choices[0].message.content }}",
         "additionalFields": {
           "parse_mode": "Markdown"
         }
@@ -140,7 +152,7 @@
       "position": [1450, 300],
       "credentials": {
         "telegramApi": {
-          "id": "telegram-bot-credentials",
+          "id": "DO9ApUeXvbwljgs8",
           "name": "Telegram Bot - Clinica Smiles"
         }
       }
@@ -184,14 +196,14 @@
       "main": [
         [
           {
-            "node": "3. Google Gemini (LLM)",
+            "node": "3. OpenRouter (DeepSeek)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "3. Google Gemini (LLM)": {
+    "3. OpenRouter (DeepSeek)": {
       "main": [
         [
           {
