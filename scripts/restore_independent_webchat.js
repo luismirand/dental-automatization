@@ -1,4 +1,8 @@
-{
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+const standaloneWebChatWorkflow = {
   "id": "webchat-llm-flow-01",
   "name": "WebChat - LLM Assistant (Dental Clinic)",
   "active": true,
@@ -16,10 +20,7 @@
       "name": "WebChat Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [
-        250,
-        300
-      ],
+      "position": [250, 300],
       "webhookId": "webchat-llm-webhook-id"
     },
     {
@@ -32,10 +33,7 @@
       "name": "1. Upsert Session",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.3,
-      "position": [
-        450,
-        300
-      ],
+      "position": [450, 300],
       "credentials": {
         "postgres": {
           "id": "5xCEAI6rBEvMyYE5",
@@ -51,10 +49,7 @@
       "name": "Intent Classifier",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        650,
-        300
-      ]
+      "position": [650, 300]
     },
     {
       "parameters": {
@@ -74,10 +69,7 @@
       "name": "Is Trivial?",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3,
-      "position": [
-        850,
-        300
-      ]
+      "position": [850, 300]
     },
     {
       "parameters": {
@@ -100,10 +92,7 @@
       "name": "Set Static Response",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.2,
-      "position": [
-        1050,
-        150
-      ]
+      "position": [1050, 150]
     },
     {
       "parameters": {
@@ -115,10 +104,7 @@
       "name": "Save Chat History (Static)",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.3,
-      "position": [
-        1250,
-        150
-      ],
+      "position": [1250, 150],
       "credentials": {
         "postgres": {
           "id": "5xCEAI6rBEvMyYE5",
@@ -134,10 +120,7 @@
       "name": "Context Builder",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1050,
-        450
-      ]
+      "position": [1050, 450]
     },
     {
       "parameters": {
@@ -157,10 +140,7 @@
       "name": "Needs History?",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3,
-      "position": [
-        1250,
-        450
-      ]
+      "position": [1250, 450]
     },
     {
       "parameters": {
@@ -173,10 +153,7 @@
       "name": "2. Get Recent History",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.3,
-      "position": [
-        1450,
-        350
-      ],
+      "position": [1450, 350],
       "credentials": {
         "postgres": {
           "id": "5xCEAI6rBEvMyYE5",
@@ -191,22 +168,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.OPENROUTER_API_KEY }}"
-            },
-            {
-              "name": "HTTP-Referer",
-              "value": "http://localhost:3000"
-            },
-            {
-              "name": "X-Title",
-              "value": "Smile Studio"
-            }
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.OPENROUTER_API_KEY }}" },
+            { "name": "HTTP-Referer", "value": "http://localhost:3000" },
+            { "name": "X-Title", "value": "Smile Studio" }
           ]
         },
         "sendBody": true,
@@ -218,10 +183,7 @@
       "name": "3. OpenRouter (LLM)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [
-        1650,
-        450
-      ]
+      "position": [1650, 450]
     },
     {
       "parameters": {
@@ -233,10 +195,7 @@
       "name": "Save Chat History (LLM)",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.3,
-      "position": [
-        1850,
-        450
-      ],
+      "position": [1850, 450],
       "credentials": {
         "postgres": {
           "id": "5xCEAI6rBEvMyYE5",
@@ -251,14 +210,8 @@
         "options": {
           "responseHeaders": {
             "entries": [
-              {
-                "name": "Access-Control-Allow-Origin",
-                "value": "*"
-              },
-              {
-                "name": "Content-Type",
-                "value": "application/json"
-              }
+              { "name": "Access-Control-Allow-Origin", "value": "*" },
+              { "name": "Content-Type", "value": "application/json" }
             ]
           }
         }
@@ -267,147 +220,48 @@
       "name": "5. Respond to Widget",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        2050,
-        300
-      ]
+      "position": [2050, 300]
     }
   ],
   "connections": {
     "WebChat Webhook": {
-      "main": [
-        [
-          {
-            "node": "1. Upsert Session",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "1. Upsert Session", "type": "main", "index": 0 }]]
     },
     "1. Upsert Session": {
-      "main": [
-        [
-          {
-            "node": "Intent Classifier",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Intent Classifier", "type": "main", "index": 0 }]]
     },
     "Intent Classifier": {
-      "main": [
-        [
-          {
-            "node": "Is Trivial?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Is Trivial?", "type": "main", "index": 0 }]]
     },
     "Is Trivial?": {
       "main": [
-        [
-          {
-            "node": "Set Static Response",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Context Builder",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Set Static Response", "type": "main", "index": 0 }],
+        [{ "node": "Context Builder", "type": "main", "index": 0 }]
       ]
     },
     "Set Static Response": {
-      "main": [
-        [
-          {
-            "node": "Save Chat History (Static)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Save Chat History (Static)", "type": "main", "index": 0 }]]
     },
     "Save Chat History (Static)": {
-      "main": [
-        [
-          {
-            "node": "5. Respond to Widget",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "5. Respond to Widget", "type": "main", "index": 0 }]]
     },
     "Context Builder": {
-      "main": [
-        [
-          {
-            "node": "Needs History?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Needs History?", "type": "main", "index": 0 }]]
     },
     "Needs History?": {
       "main": [
-        [
-          {
-            "node": "2. Get Recent History",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "3. OpenRouter (LLM)",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "2. Get Recent History", "type": "main", "index": 0 }],
+        [{ "node": "3. OpenRouter (LLM)", "type": "main", "index": 0 }]
       ]
     },
     "2. Get Recent History": {
-      "main": [
-        [
-          {
-            "node": "3. OpenRouter (LLM)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "3. OpenRouter (LLM)", "type": "main", "index": 0 }]]
     },
     "3. OpenRouter (LLM)": {
-      "main": [
-        [
-          {
-            "node": "Save Chat History (LLM)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Save Chat History (LLM)", "type": "main", "index": 0 }]]
     },
     "Save Chat History (LLM)": {
-      "main": [
-        [
-          {
-            "node": "5. Respond to Widget",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "5. Respond to Widget", "type": "main", "index": 0 }]]
     }
   },
   "settings": {
@@ -415,4 +269,32 @@
     "saveDataErrorExecution": "all",
     "saveDataSuccessExecution": "all"
   }
-}
+};
+
+const outputFile = path.join(__dirname, '..', 'infrastructure', 'n8n_workflows', 'webchat_flow.json');
+fs.writeFileSync(outputFile, JSON.stringify(standaloneWebChatWorkflow, null, 2), 'utf8');
+console.log("Standalone WebChat Workflow written to:", outputFile);
+
+const sql = `
+UPDATE workflow_entity SET
+  name = '${standaloneWebChatWorkflow.name}',
+  active = true,
+  nodes = '${JSON.stringify(standaloneWebChatWorkflow.nodes).replace(/'/g, "''")}'::json,
+  connections = '${JSON.stringify(standaloneWebChatWorkflow.connections).replace(/'/g, "''")}'::json,
+  settings = '${JSON.stringify(standaloneWebChatWorkflow.settings || {}).replace(/'/g, "''")}'::json,
+  "updatedAt" = NOW()
+WHERE id = 'webchat-llm-flow-01';
+
+INSERT INTO shared_workflow ("workflowId", "projectId", "role") 
+VALUES ('webchat-llm-flow-01', '66MPRt53ZeFhgWYa', 'workflow:owner') 
+ON CONFLICT DO NOTHING;
+
+INSERT INTO webhook_entity ("webhookPath", "method", "node", "webhookId", "workflowId") 
+VALUES ('webchat', 'POST', 'WebChat Webhook', 'webchat-llm-webhook-id', 'webchat-llm-flow-01') 
+ON CONFLICT DO NOTHING;
+`;
+
+const sqlFile = path.join(__dirname, 'restore_wc_standalone.sql');
+fs.writeFileSync(sqlFile, sql, 'utf8');
+execSync(`Get-Content "${sqlFile}" | docker exec -i dental_postgres psql -U dental_user -d dental_clinic_db`, { shell: 'powershell.exe' });
+console.log("Standalone WebChat registered in DB successfully!");

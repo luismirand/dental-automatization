@@ -1,4 +1,8 @@
-{
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+const standaloneWhatsAppWorkflow = {
   "id": "whatsapp-llm-flow-01",
   "name": "WhatsApp - LLM Assistant (Dental Clinic)",
   "active": true,
@@ -14,10 +18,7 @@
       "name": "WhatsApp Verification (GET)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [
-        250,
-        150
-      ],
+      "position": [250, 150],
       "webhookId": "whatsapp-llm-get-webhook-id"
     },
     {
@@ -30,10 +31,7 @@
       "name": "Respond Challenge",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        450,
-        150
-      ]
+      "position": [450, 150]
     },
     {
       "parameters": {
@@ -46,10 +44,7 @@
       "name": "WhatsApp Webhook (POST)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [
-        250,
-        350
-      ],
+      "position": [250, 350],
       "webhookId": "whatsapp-llm-webhook-id"
     },
     {
@@ -62,10 +57,7 @@
       "name": "1. Upsert Session (Lock)",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.3,
-      "position": [
-        450,
-        300
-      ],
+      "position": [450, 300],
       "credentials": {
         "postgres": {
           "id": "5xCEAI6rBEvMyYE5",
@@ -81,10 +73,7 @@
       "name": "Intent Classifier",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        650,
-        300
-      ]
+      "position": [650, 300]
     },
     {
       "parameters": {
@@ -104,10 +93,7 @@
       "name": "Is Trivial?",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3,
-      "position": [
-        850,
-        300
-      ]
+      "position": [850, 300]
     },
     {
       "parameters": {
@@ -130,10 +116,7 @@
       "name": "Set Static Response",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.2,
-      "position": [
-        1050,
-        150
-      ]
+      "position": [1050, 150]
     },
     {
       "parameters": {
@@ -143,10 +126,7 @@
       "name": "Context Builder",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1050,
-        450
-      ]
+      "position": [1050, 450]
     },
     {
       "parameters": {
@@ -166,10 +146,7 @@
       "name": "Needs History?",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3,
-      "position": [
-        1250,
-        450
-      ]
+      "position": [1250, 450]
     },
     {
       "parameters": {
@@ -181,10 +158,7 @@
       "name": "Save Chat History (Static)",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.3,
-      "position": [
-        1250,
-        150
-      ],
+      "position": [1250, 150],
       "credentials": {
         "postgres": {
           "id": "5xCEAI6rBEvMyYE5",
@@ -218,10 +192,7 @@
       "name": "Send WhatsApp (Static)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [
-        1450,
-        150
-      ]
+      "position": [1450, 150]
     },
     {
       "parameters": {
@@ -234,10 +205,7 @@
       "name": "2. Get Recent History",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.3,
-      "position": [
-        1450,
-        350
-      ],
+      "position": [1450, 350],
       "credentials": {
         "postgres": {
           "id": "5xCEAI6rBEvMyYE5",
@@ -279,10 +247,7 @@
       "name": "3. OpenRouter (LLM Main)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [
-        1650,
-        450
-      ]
+      "position": [1650, 450]
     },
     {
       "parameters": {
@@ -294,10 +259,7 @@
       "name": "Save Chat History (LLM)",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.3,
-      "position": [
-        1850,
-        450
-      ],
+      "position": [1850, 450],
       "credentials": {
         "postgres": {
           "id": "5xCEAI6rBEvMyYE5",
@@ -331,158 +293,51 @@
       "name": "Send WhatsApp (LLM)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [
-        2050,
-        450
-      ]
+      "position": [2050, 450]
     }
   ],
   "connections": {
     "WhatsApp Verification (GET)": {
-      "main": [
-        [
-          {
-            "node": "Respond Challenge",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Respond Challenge", "type": "main", "index": 0 }]]
     },
     "WhatsApp Webhook (POST)": {
-      "main": [
-        [
-          {
-            "node": "1. Upsert Session (Lock)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "1. Upsert Session (Lock)", "type": "main", "index": 0 }]]
     },
     "1. Upsert Session (Lock)": {
-      "main": [
-        [
-          {
-            "node": "Intent Classifier",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Intent Classifier", "type": "main", "index": 0 }]]
     },
     "Intent Classifier": {
-      "main": [
-        [
-          {
-            "node": "Is Trivial?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Is Trivial?", "type": "main", "index": 0 }]]
     },
     "Is Trivial?": {
       "main": [
-        [
-          {
-            "node": "Set Static Response",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Context Builder",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Set Static Response", "type": "main", "index": 0 }],
+        [{ "node": "Context Builder", "type": "main", "index": 0 }]
       ]
     },
     "Set Static Response": {
-      "main": [
-        [
-          {
-            "node": "Save Chat History (Static)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Save Chat History (Static)", "type": "main", "index": 0 }]]
     },
     "Save Chat History (Static)": {
-      "main": [
-        [
-          {
-            "node": "Send WhatsApp (Static)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Send WhatsApp (Static)", "type": "main", "index": 0 }]]
     },
     "Context Builder": {
-      "main": [
-        [
-          {
-            "node": "Needs History?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Needs History?", "type": "main", "index": 0 }]]
     },
     "Needs History?": {
       "main": [
-        [
-          {
-            "node": "2. Get Recent History",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "3. OpenRouter (LLM Main)",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "2. Get Recent History", "type": "main", "index": 0 }],
+        [{ "node": "3. OpenRouter (LLM Main)", "type": "main", "index": 0 }]
       ]
     },
     "2. Get Recent History": {
-      "main": [
-        [
-          {
-            "node": "3. OpenRouter (LLM Main)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "3. OpenRouter (LLM Main)", "type": "main", "index": 0 }]]
     },
     "3. OpenRouter (LLM Main)": {
-      "main": [
-        [
-          {
-            "node": "Save Chat History (LLM)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Save Chat History (LLM)", "type": "main", "index": 0 }]]
     },
     "Save Chat History (LLM)": {
-      "main": [
-        [
-          {
-            "node": "Send WhatsApp (LLM)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Send WhatsApp (LLM)", "type": "main", "index": 0 }]]
     }
   },
   "settings": {
@@ -490,4 +345,36 @@
     "saveDataErrorExecution": "all",
     "saveDataSuccessExecution": "all"
   }
-}
+};
+
+const outputFile = path.join(__dirname, '..', 'infrastructure', 'n8n_workflows', 'whatsapp_llm_flow.json');
+fs.writeFileSync(outputFile, JSON.stringify(standaloneWhatsAppWorkflow, null, 2), 'utf8');
+console.log("Standalone WhatsApp Workflow written to:", outputFile);
+
+const sql = `
+UPDATE workflow_entity SET
+  name = '${standaloneWhatsAppWorkflow.name}',
+  active = true,
+  nodes = '${JSON.stringify(standaloneWhatsAppWorkflow.nodes).replace(/'/g, "''")}'::json,
+  connections = '${JSON.stringify(standaloneWhatsAppWorkflow.connections).replace(/'/g, "''")}'::json,
+  settings = '${JSON.stringify(standaloneWhatsAppWorkflow.settings || {}).replace(/'/g, "''")}'::json,
+  "updatedAt" = NOW()
+WHERE id = 'whatsapp-llm-flow-01';
+
+INSERT INTO shared_workflow ("workflowId", "projectId", "role") 
+VALUES ('whatsapp-llm-flow-01', '66MPRt53ZeFhgWYa', 'workflow:owner') 
+ON CONFLICT DO NOTHING;
+
+INSERT INTO webhook_entity ("webhookPath", "method", "node", "webhookId", "workflowId") 
+VALUES ('whatsapp', 'GET', 'WhatsApp Verification (GET)', 'whatsapp-llm-get-webhook-id', 'whatsapp-llm-flow-01') 
+ON CONFLICT DO NOTHING;
+
+INSERT INTO webhook_entity ("webhookPath", "method", "node", "webhookId", "workflowId") 
+VALUES ('whatsapp', 'POST', 'WhatsApp Webhook (POST)', 'whatsapp-llm-webhook-id', 'whatsapp-llm-flow-01') 
+ON CONFLICT DO NOTHING;
+`;
+
+const sqlFile = path.join(__dirname, 'restore_wa_standalone.sql');
+fs.writeFileSync(sqlFile, sql, 'utf8');
+execSync(`Get-Content "${sqlFile}" | docker exec -i dental_postgres psql -U dental_user -d dental_clinic_db`, { shell: 'powershell.exe' });
+console.log("Standalone WhatsApp registered in DB successfully!");

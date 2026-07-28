@@ -18,6 +18,18 @@ dist/
 .DS_Store
 Thumbs.db
 
-# Temporary references
+# Temporary references and debug files
 tmp_reference/
+pruebas/
+infrastructure/n8n_workflows/backups/
+*.json.tmp
+tmp_exec.json
+exec_unflatted.json
+exec_out*.json
+openrouter_test.json
+scripts/*.sql
+scripts/inspect_*.js
+scripts/get_*.js
+scripts/print_*.js
+scripts/unflatten.js
 
