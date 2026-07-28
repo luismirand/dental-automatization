@@ -90,39 +90,24 @@ export function TelegramCTA({
   );
 }
 
-/** Floating action buttons (WhatsApp & Telegram 56px FABs) */
+/** 
+ * Floating WhatsApp button placed on the bottom-left corner
+ * so it never overlaps with the AI Chat Widget trigger button on the bottom-right.
+ */
 export function FloatingWhatsApp() {
   return (
-    <div className="fixed bottom-20 right-4 z-40 flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
-      {/* Telegram FAB (Secondary) */}
-      <a
-        href={TELEGRAM_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Contactar por Telegram"
-        title="Contactar por Telegram"
-        className="group relative grid size-12 place-items-center rounded-full bg-telegram text-white shadow-elevated ring-4 ring-white transition-all hover:scale-110 sm:size-14"
-      >
-        <TelegramIcon className="size-6" />
-        <span className="absolute right-16 hidden rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white whitespace-nowrap opacity-0 shadow-lg transition-opacity group-hover:opacity-100 sm:block">
-          Contactar por Telegram
-        </span>
-      </a>
-
-      {/* WhatsApp FAB (Primary) */}
-      <a
-        href={WHATSAPP_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Contactar por WhatsApp"
-        title="Contactar por WhatsApp"
-        className="group relative grid size-14 place-items-center rounded-full bg-whatsapp text-white shadow-elevated ring-4 ring-white transition-all hover:scale-110"
-      >
-        <MessageCircle className="size-7" />
-        <span className="absolute right-16 hidden rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white whitespace-nowrap opacity-0 shadow-lg transition-opacity group-hover:opacity-100 sm:block">
-          Contactar por WhatsApp
-        </span>
-      </a>
-    </div>
+    <a
+      href={WHATSAPP_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Contactar por WhatsApp"
+      title="Contactar por WhatsApp"
+      className="group fixed bottom-5 left-5 z-40 flex items-center gap-2 rounded-full bg-whatsapp pl-3.5 pr-4 py-3 text-white shadow-elevated ring-4 ring-white transition-all hover:scale-105 sm:bottom-6 sm:left-6"
+    >
+      <MessageCircle className="size-6 shrink-0" />
+      <span className="text-xs font-bold whitespace-nowrap sm:text-sm">
+        WhatsApp
+      </span>
+    </a>
   );
 }
