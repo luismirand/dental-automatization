@@ -247,6 +247,135 @@
     },
     {
       "parameters": {
+        "jsCode": "const systemContext = $('Context Builder').first().json.systemContext || '';\nconst knowledgeContext = $('Context Builder').first().json.knowledgeContext || '';\nconst needsHistory = $('Context Builder').first().json.needsHistory;\nconst userMessage = $('Context Builder').first().json.userMessage || '';\n\nlet historyText = '';\ntry {\n  if (needsHistory && $('2. Get Recent History')) {\n    const historyItems = $('2. Get Recent History').all();\n    if (historyItems && historyItems.length > 0) {\n      historyText = historyItems.slice().reverse().map(m => {\n        const sender = (m.json && m.json.sender_type === 'user') ? 'Paciente' : 'Sofía';\n        const text = (m.json && m.json.message_text) ? m.json.message_text : '';\n        return sender + ': ' + text;\n      }).join('\\n');\n    }\n  }\n} catch (e) {}\n\nconst systemContent = `====== SISTEMA ======\\n${systemContext}\\n\\n====== CONOCIMIENTO RELEVANTE ======\\n${knowledgeContext}`;\nconst userContent = `${needsHistory && historyText ? '=== HISTORIAL RECIENTE ===\\n' + historyText + '\\n\\n' : ''}Mensaje actual del paciente: \"${userMessage}\"`;\n\nreturn {\n  messages: [\n    { role: 'system', content: systemContent },\n    { role: 'user', content: userContent }\n  ],\n  startTime: Date.now()\n};"
+      },
+      "id": "wa-prepare-prompt",
+      "name": "Prepare LLM Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1550,
+        450
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.deepseek.com/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.DEEPSEEK_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"deepseek-chat\",\n  \"messages\": {{ JSON.stringify($('Prepare LLM Prompt').first().json.messages) }}\n}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "wa-llm-deepseek",
+      "name": "1. DeepSeek (LLM Primary)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1700,
+        450
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "dataType": "boolean",
+        "value1": "={{ !!($json.choices && $json.choices[0] && $json.choices[0].message && $json.choices[0].message.content) }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": true,
+              "output": 0
+            }
+          ]
+        },
+        "fallbackOutput": 1
+      },
+      "id": "wa-ds-check",
+      "name": "DeepSeek Success?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        1850,
+        450
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.GEMINI_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gemini-2.0-flash\",\n  \"messages\": {{ JSON.stringify($('Prepare LLM Prompt').first().json.messages) }}\n}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "wa-llm-gemini",
+      "name": "2. Gemini (LLM Fallback)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2000,
+        600
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "dataType": "boolean",
+        "value1": "={{ !!(($json.choices && $json.choices[0] && $json.choices[0].message && $json.choices[0].message.content) || ($json.candidates && $json.candidates[0] && $json.candidates[0].content)) }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": true,
+              "output": 0
+            }
+          ]
+        },
+        "fallbackOutput": 1
+      },
+      "id": "wa-gem-check",
+      "name": "Gemini Success?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        2150,
+        600
+      ]
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "https://openrouter.ai/api/v1/chat/completions",
         "sendHeaders": true,
@@ -272,15 +401,32 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"openrouter/free\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"====== SISTEMA ======\\n{{ $('Context Builder').first().json.systemContext }}\\n\\n====== CONOCIMIENTO RELEVANTE ======\\n{{ $('Context Builder').first().json.knowledgeContext }}\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $('Context Builder').first().json.needsHistory ? '=== HISTORIAL RECIENTE ===\\\\n' + $('2. Get Recent History').all().reverse().map(m => (m.json.sender_type === 'user' ? 'Paciente' : 'Sofía') + ': ' + m.json.message_text).join('\\\\n') + '\\\\n\\\\n' : '' }}Mensaje actual del paciente: \\\"{{ $('Context Builder').first().json.userMessage }}\\\"\"\n    }\n  ]\n}",
-        "options": {}
+        "jsonBody": "={\n  \"model\": \"openrouter/free\",\n  \"messages\": {{ JSON.stringify($('Prepare LLM Prompt').first().json.messages) }}\n}",
+        "options": {
+          "timeout": 30000
+        }
       },
-      "id": "4",
-      "name": "3. OpenRouter (LLM Main)",
+      "id": "wa-llm-openrouter",
+      "name": "3. OpenRouter (LLM Optional)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        1650,
+        2300,
+        750
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const startTime = $('Prepare LLM Prompt').first() ? $('Prepare LLM Prompt').first().json.startTime : Date.now();\nconst telemetry = [];\nlet finalContent = null;\nlet winningProvider = null;\nlet winningModel = null;\n\n// 1. Inspect DeepSeek Primary\ntry {\n  const dsItems = $('1. DeepSeek (LLM Primary)').all();\n  if (dsItems && dsItems.length > 0) {\n    const dsNode = dsItems[0];\n    const dsLatency = Date.now() - startTime;\n    if (dsNode && dsNode.json && dsNode.json.choices && dsNode.json.choices[0] && dsNode.json.choices[0].message && dsNode.json.choices[0].message.content) {\n      finalContent = dsNode.json.choices[0].message.content;\n      winningProvider = 'DeepSeek';\n      winningModel = dsNode.json.model || 'deepseek-chat';\n      telemetry.push({\n        provider: 'DeepSeek',\n        model: winningModel,\n        httpCode: 200,\n        latencyMs: dsLatency,\n        error: null,\n        usage: dsNode.json.usage || null,\n        status: 'SUCCESS'\n      });\n    } else if (dsNode && dsNode.json) {\n      const errObj = dsNode.json.error || null;\n      const errMessage = errObj ? (errObj.message || JSON.stringify(errObj)) : 'No content returned';\n      const httpCode = dsNode.json.statusCode || (errObj ? (errObj.code || 500) : 500);\n      telemetry.push({\n        provider: 'DeepSeek',\n        model: 'deepseek-chat',\n        httpCode: httpCode,\n        latencyMs: dsLatency,\n        error: errMessage,\n        usage: null,\n        status: 'FAILED'\n      });\n    }\n  }\n} catch (e) {}\n\n// 2. Inspect Gemini Fallback\nif (!finalContent) {\n  try {\n    const gemItems = $('2. Gemini (LLM Fallback)').all();\n    if (gemItems && gemItems.length > 0) {\n      const gemNode = gemItems[0];\n      const gemLatency = Date.now() - startTime;\n      if (gemNode && gemNode.json && gemNode.json.choices && gemNode.json.choices[0] && gemNode.json.choices[0].message && gemNode.json.choices[0].message.content) {\n        finalContent = gemNode.json.choices[0].message.content;\n        winningProvider = 'Gemini';\n        winningModel = gemNode.json.model || 'gemini-2.0-flash';\n        telemetry.push({\n          provider: 'Gemini',\n          model: winningModel,\n          httpCode: 200,\n          latencyMs: gemLatency,\n          error: null,\n          usage: gemNode.json.usage || null,\n          status: 'SUCCESS'\n        });\n      } else if (gemNode && gemNode.json && gemNode.json.candidates && gemNode.json.candidates[0] && gemNode.json.candidates[0].content && gemNode.json.candidates[0].content.parts) {\n        finalContent = gemNode.json.candidates[0].content.parts.map(p => p.text).join('\\n');\n        winningProvider = 'Gemini';\n        winningModel = 'gemini-2.0-flash';\n        telemetry.push({\n          provider: 'Gemini',\n          model: winningModel,\n          httpCode: 200,\n          latencyMs: gemLatency,\n          error: null,\n          usage: gemNode.json.usageMetadata || null,\n          status: 'SUCCESS'\n        });\n      } else if (gemNode && gemNode.json) {\n        const errObj = gemNode.json.error || null;\n        const errMessage = errObj ? (errObj.message || JSON.stringify(errObj)) : 'No content returned';\n        const httpCode = gemNode.json.statusCode || (errObj ? (errObj.code || 500) : 500);\n        telemetry.push({\n          provider: 'Gemini',\n          model: 'gemini-2.0-flash',\n          httpCode: httpCode,\n          latencyMs: gemLatency,\n          error: errMessage,\n          usage: null,\n          status: 'FAILED'\n        });\n      }\n    }\n  } catch (e) {}\n}\n\n// 3. Inspect OpenRouter Optional\nif (!finalContent) {\n  try {\n    const openItems = $('3. OpenRouter (LLM Optional)').all();\n    if (openItems && openItems.length > 0) {\n      const openNode = openItems[0];\n      const openLatency = Date.now() - startTime;\n      if (openNode && openNode.json && openNode.json.choices && openNode.json.choices[0] && openNode.json.choices[0].message && openNode.json.choices[0].message.content) {\n        finalContent = openNode.json.choices[0].message.content;\n        winningProvider = 'OpenRouter';\n        winningModel = openNode.json.model || 'openrouter/free';\n        telemetry.push({\n          provider: 'OpenRouter',\n          model: winningModel,\n          httpCode: 200,\n          latencyMs: openLatency,\n          error: null,\n          usage: openNode.json.usage || null,\n          status: 'SUCCESS'\n        });\n      } else if (openNode && openNode.json) {\n        const errObj = openNode.json.error || null;\n        const errMessage = errObj ? (errObj.message || JSON.stringify(errObj)) : 'No content returned';\n        const httpCode = openNode.json.statusCode || (errObj ? (errObj.code || 500) : 500);\n        telemetry.push({\n          provider: 'OpenRouter',\n          model: 'openrouter/free',\n          httpCode: httpCode,\n          latencyMs: openLatency,\n          error: errMessage,\n          usage: null,\n          status: 'FAILED'\n        });\n      }\n    }\n  } catch (e) {}\n}\n\n// 4. Fallback if all failed\nif (!finalContent) {\n  finalContent = 'En este momento nuestro asistente está experimentando un problema temporal. Por favor intenta nuevamente en unos minutos.';\n  winningProvider = 'Fallback';\n  winningModel = 'controlled-fallback';\n}\n\nreturn {\n  choices: [\n    {\n      message: {\n        role: 'assistant',\n        content: finalContent\n      }\n    }\n  ],\n  provider: winningProvider,\n  model: winningModel,\n  telemetry: telemetry\n};"
+      },
+      "id": "4",
+      "name": "3. OpenRouter (LLM Main)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2450,
         450
       ]
     },
@@ -295,7 +441,7 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.3,
       "position": [
-        1850,
+        2650,
         450
       ],
       "credentials": {
@@ -332,7 +478,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        2050,
+        2850,
         450
       ]
     }
@@ -444,7 +590,7 @@
         ],
         [
           {
-            "node": "3. OpenRouter (LLM Main)",
+            "node": "Prepare LLM Prompt",
             "type": "main",
             "index": 0
           }
@@ -452,6 +598,86 @@
       ]
     },
     "2. Get Recent History": {
+      "main": [
+        [
+          {
+            "node": "Prepare LLM Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare LLM Prompt": {
+      "main": [
+        [
+          {
+            "node": "1. DeepSeek (LLM Primary)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. DeepSeek (LLM Primary)": {
+      "main": [
+        [
+          {
+            "node": "DeepSeek Success?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Success?": {
+      "main": [
+        [
+          {
+            "node": "3. OpenRouter (LLM Main)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "2. Gemini (LLM Fallback)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Gemini (LLM Fallback)": {
+      "main": [
+        [
+          {
+            "node": "Gemini Success?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Success?": {
+      "main": [
+        [
+          {
+            "node": "3. OpenRouter (LLM Main)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "3. OpenRouter (LLM Optional)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. OpenRouter (LLM Optional)": {
       "main": [
         [
           {
