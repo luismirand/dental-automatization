@@ -35,7 +35,9 @@ export const MAPS_DIRECTIONS = `https://www.google.com/maps/dir/?api=1&destinati
 export const WAZE_DIRECTIONS = `https://waze.com/ul?q=${encodeURIComponent(CLINIC.address)}&navigate=yes`;
 
 // Chat Widget — apunta directamente a n8n (CORS confirmado OK con Access-Control-Allow-Origin: *)
-export const WEBCHAT_WEBHOOK_URL = "http://localhost:5678/webhook/webchat";
+export const WEBCHAT_WEBHOOK_URL =
+  (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.PUBLIC_WEBCHAT_WEBHOOK_URL) ||
+  "https://drainpipe-latch-frolic.ngrok-free.dev/webhook/webchat";
 
 // Telegram Bot
 export const TELEGRAM_BOT_URL = "https://t.me/Clinica_Smiles_Bot";
