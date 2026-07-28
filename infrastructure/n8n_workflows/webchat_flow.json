@@ -177,7 +177,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT sender_type, message_text FROM chat_messages WHERE conversation_id = '{{ $('1. Upsert Session').first().json.conversation_id }}' ORDER BY created_at DESC LIMIT 10;",
+        "query": "SELECT sender_type, message_text FROM chat_messages WHERE conversation_id = (SELECT c.id FROM conversations c JOIN leads l ON c.lead_id = l.id WHERE l.phone_number = '{{ $('WebChat Webhook').first().json.body.sessionId }}' ORDER BY c.created_at DESC LIMIT 1) ORDER BY created_at DESC LIMIT 4;",
         "options": {}
       },
       "alwaysOutputData": true,

@@ -238,7 +238,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT sender_type, message_text FROM chat_messages WHERE conversation_id = '{{ $('1. Upsert Session (Lock)').first().json.conversation_id }}' ORDER BY created_at DESC LIMIT 10;",
+        "query": "SELECT sender_type, message_text FROM chat_messages WHERE conversation_id = (SELECT c.id FROM conversations c JOIN leads l ON c.lead_id = l.id WHERE l.phone_number = '{{ ($('WhatsApp Webhook (POST)').first().json.body || $('WhatsApp Webhook (POST)').first().json).entry[0].changes[0].value.messages[0].from }}' ORDER BY c.created_at DESC LIMIT 1) ORDER BY created_at DESC LIMIT 4;",
         "options": {}
       },
       "alwaysOutputData": true,
