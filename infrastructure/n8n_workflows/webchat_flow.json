@@ -222,7 +222,7 @@
             },
             {
               "name": "Authorization",
-              "value": "=Bearer {{ $env.DEEPSEEK_API_KEY }}"
+              "value": "={{ \"Bearer \" + $env.DEEPSEEK_API_KEY }}"
             }
           ]
         },
@@ -286,7 +286,7 @@
             },
             {
               "name": "Authorization",
-              "value": "=Bearer {{ $env.GEMINI_API_KEY }}"
+              "value": "={{ \"Bearer \" + $env.GEMINI_API_KEY }}"
             }
           ]
         },
@@ -350,7 +350,7 @@
             },
             {
               "name": "Authorization",
-              "value": "=Bearer {{ $env.OPENROUTER_API_KEY }}"
+              "value": "={{ \"Bearer \" + $env.OPENROUTER_API_KEY }}"
             },
             {
               "name": "HTTP-Referer",
