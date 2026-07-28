@@ -28,6 +28,8 @@
   --color-cyan-foreground: var(--cyan-foreground);
   --color-whatsapp: var(--whatsapp);
   --color-whatsapp-hover: var(--whatsapp-hover);
+  --color-telegram: var(--telegram);
+  --color-telegram-hover: var(--telegram-hover);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
   --color-urgent: var(--urgent);
@@ -60,6 +62,8 @@
   --cyan-foreground: oklch(1 0 0);
   --whatsapp: oklch(0.72 0.17 155);             /* #25D366 */
   --whatsapp-hover: oklch(0.65 0.17 155);
+  --telegram: oklch(0.6 0.16 230);              /* #0088cc */
+  --telegram-hover: oklch(0.53 0.16 230);
   --surface: oklch(0.985 0.005 250);            /* #F8FAFC */
   --surface-2: oklch(0.96 0.01 240);            /* soft blue-gray */
   --urgent: oklch(0.65 0.22 25);                /* warm red for urgencias */

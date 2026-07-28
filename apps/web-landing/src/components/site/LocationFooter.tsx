@@ -1,5 +1,7 @@
-import { Clock, Mail, MapPin, Navigation, Phone, ShieldCheck, Sparkles } from "lucide-react";
+import { Clock, Mail, MapPin, Navigation, Phone, ShieldCheck } from "lucide-react";
 import { CLINIC, MAPS_DIRECTIONS, MAPS_EMBED, WAZE_DIRECTIONS } from "@/lib/site-config";
+import { DentalIcon } from "./Logo";
+import { TelegramCTA, WhatsAppCTA } from "./WhatsAppCTA";
 
 export function LocationFooter() {
   return (
@@ -18,10 +20,8 @@ export function LocationFooter() {
           </div>
 
           <div>
-            <div className="flex items-center gap-2">
-              <span className="grid size-9 place-items-center rounded-xl bg-cyan text-cyan-foreground">
-                <Sparkles className="size-5" />
-              </span>
+            <div className="flex items-center gap-2.5">
+              <DentalIcon className="size-9" />
               <span>
                 <span className="block text-lg font-extrabold leading-none">{CLINIC.name}</span>
                 <span className="text-[11px] font-medium uppercase tracking-wider text-navy-foreground/60">
@@ -30,7 +30,7 @@ export function LocationFooter() {
               </span>
             </div>
 
-            <div className="mt-6 space-y-4 text-sm">
+            <div className="mt-6 space-y-3.5 text-sm">
               <p className="flex items-start gap-3">
                 <MapPin className="mt-0.5 size-4 shrink-0 text-cyan" />
                 <span>{CLINIC.address}</span>
@@ -49,10 +49,16 @@ export function LocationFooter() {
               </p>
             </div>
 
+            {/* Direct Social / Messaging Contact Channels */}
+            <div className="mt-5 flex flex-wrap gap-2.5">
+              <WhatsAppCTA size="sm" variant="solid" label="Atención por WhatsApp" />
+              <TelegramCTA size="sm" label="Telegram Bot" />
+            </div>
+
             <div className="mt-6">
               <div className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-navy-foreground/70">
                 <Clock className="size-3.5" />
-                Horarios
+                Horarios de Atención
               </div>
               <ul className="space-y-1.5 text-sm">
                 {CLINIC.hours.map((h) => (

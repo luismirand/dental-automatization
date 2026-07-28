@@ -16,7 +16,7 @@ export const CLINIC = {
 
 export const WHATSAPP_NUMBER = "525512345678";
 export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
-  "Hola Smile Studio, quiero agendar una cita.",
+  "Hola, quiero agendar una cita en Smile Studio. ¿Cuáles son los horarios disponibles?",
 )}`;
 export const WHATSAPP_URGENT_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
   "Hola, tengo una urgencia dental y necesito atención hoy mismo.",
@@ -39,4 +39,6 @@ export const WEBCHAT_WEBHOOK_URL = "http://localhost:5678/webhook/webchat";
 
 // Telegram Bot
 export const TELEGRAM_BOT_URL = "https://t.me/Clinica_Smiles_Bot";
+export const TELEGRAM_URL = "https://t.me/Clinica_Smiles_Bot?start=booking";
+
 
