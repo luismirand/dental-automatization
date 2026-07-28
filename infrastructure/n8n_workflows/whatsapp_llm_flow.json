@@ -88,22 +88,28 @@
     },
     {
       "parameters": {
-        "dataType": "boolean",
-        "value1": "={{ $json.isTrivial }}",
+        "mode": "rules",
+        "dataType": "string",
+        "value1": "={{ String($json.isTrivial) }}",
         "rules": {
           "rules": [
             {
-              "value2": true,
-              "output": 0
+              "operation": "equal",
+              "value2": "true",
+              "outputKey": "output0"
+            },
+            {
+              "operation": "equal",
+              "value2": "false",
+              "outputKey": "output1"
             }
           ]
-        },
-        "fallbackOutput": 1
+        }
       },
       "id": "switch-node",
       "name": "Is Trivial?",
       "type": "n8n-nodes-base.switch",
-      "typeVersion": 3,
+      "typeVersion": 2,
       "position": [
         850,
         300
@@ -129,7 +135,7 @@
       "id": "static-response-node",
       "name": "Set Static Response",
       "type": "n8n-nodes-base.set",
-      "typeVersion": 3.2,
+      "typeVersion": 2,
       "position": [
         1050,
         150
@@ -137,7 +143,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const fs = require('fs');\n\nconst intent = $('Intent Classifier').first().json.intent;\nconst userMessage = $('Intent Classifier').first().json.originalMessage;\nconst needsHistory = $('Intent Classifier').first().json.needsHistory;\n\nlet systemContext = '';\ntry { systemContext = fs.readFileSync('/conocimiento/identidad.md', 'utf8'); } catch (e) { systemContext = 'Eres Sofía, asistente dental.'; }\n\nlet knowledgeContext = '';\ntry {\n  if (intent === 'PRECIOS') knowledgeContext = fs.readFileSync('/conocimiento/servicios_precios.md', 'utf8');\n  else if (intent === 'HORARIOS_UBICACION') knowledgeContext = fs.readFileSync('/conocimiento/horarios_ubicacion.md', 'utf8');\n  else if (intent === 'AGENDAR') knowledgeContext = fs.readFileSync('/conocimiento/protocolo_agendamiento.md', 'utf8');\n  else knowledgeContext = fs.readFileSync('/conocimiento/servicios_precios.md', 'utf8') + '\\n\\n' + fs.readFileSync('/conocimiento/horarios_ubicacion.md', 'utf8');\n} catch (e) { knowledgeContext = 'Información general de la clínica.'; }\n\nreturn { systemContext, knowledgeContext, userMessage, needsHistory };"
+        "jsCode": "const intent = $('Intent Classifier').first().json.intent;\nconst userMessage = $('Intent Classifier').first().json.originalMessage;\nconst needsHistory = $('Intent Classifier').first().json.needsHistory;\n\nlet systemContext = 'Eres Sofía, asistente dental.';\nlet knowledgeContext = 'Información general de la clínica.';\n\ntry {\n  const fs = require('fs');\n  try { systemContext = fs.readFileSync('/conocimiento/identidad.md', 'utf8'); } catch(e) {}\n  try {\n    if (intent === 'PRECIOS') knowledgeContext = fs.readFileSync('/conocimiento/servicios_precios.md', 'utf8');\n    else if (intent === 'HORARIOS_UBICACION') knowledgeContext = fs.readFileSync('/conocimiento/horarios_ubicacion.md', 'utf8');\n    else if (intent === 'AGENDAR') knowledgeContext = fs.readFileSync('/conocimiento/protocolo_agendamiento.md', 'utf8');\n    else knowledgeContext = fs.readFileSync('/conocimiento/servicios_precios.md', 'utf8') + '\\n\\n' + fs.readFileSync('/conocimiento/horarios_ubicacion.md', 'utf8');\n  } catch(e) {}\n} catch(e) {}\n\nreturn { systemContext, knowledgeContext, userMessage, needsHistory };"
       },
       "id": "context-builder-node",
       "name": "Context Builder",
@@ -150,22 +156,28 @@
     },
     {
       "parameters": {
-        "dataType": "boolean",
-        "value1": "={{ $json.needsHistory }}",
+        "mode": "rules",
+        "dataType": "string",
+        "value1": "={{ String($json.needsHistory) }}",
         "rules": {
           "rules": [
             {
-              "value2": true,
-              "output": 0
+              "operation": "equal",
+              "value2": "true",
+              "outputKey": "output0"
+            },
+            {
+              "operation": "equal",
+              "value2": "false",
+              "outputKey": "output1"
             }
           ]
-        },
-        "fallbackOutput": 1
+        }
       },
       "id": "switch-history-node",
       "name": "Needs History?",
       "type": "n8n-nodes-base.switch",
-      "typeVersion": 3,
+      "typeVersion": 2,
       "position": [
         1250,
         450
@@ -295,22 +307,28 @@
     },
     {
       "parameters": {
-        "dataType": "boolean",
-        "value1": "={{ !!($json.choices && $json.choices[0] && $json.choices[0].message && $json.choices[0].message.content) }}",
+        "mode": "rules",
+        "dataType": "string",
+        "value1": "={{ String(!!($json.choices && $json.choices[0] && $json.choices[0].message && $json.choices[0].message.content)) }}",
         "rules": {
           "rules": [
             {
-              "value2": true,
-              "output": 0
+              "operation": "equal",
+              "value2": "true",
+              "outputKey": "output0"
+            },
+            {
+              "operation": "equal",
+              "value2": "false",
+              "outputKey": "output1"
             }
           ]
-        },
-        "fallbackOutput": 1
+        }
       },
       "id": "wa-ds-check",
       "name": "DeepSeek Success?",
       "type": "n8n-nodes-base.switch",
-      "typeVersion": 3,
+      "typeVersion": 2,
       "position": [
         1850,
         450
@@ -353,22 +371,28 @@
     },
     {
       "parameters": {
-        "dataType": "boolean",
-        "value1": "={{ !!(($json.choices && $json.choices[0] && $json.choices[0].message && $json.choices[0].message.content) || ($json.candidates && $json.candidates[0] && $json.candidates[0].content)) }}",
+        "mode": "rules",
+        "dataType": "string",
+        "value1": "={{ String(!!(($json.choices && $json.choices[0] && $json.choices[0].message && $json.choices[0].message.content) || ($json.candidates && $json.candidates[0] && $json.candidates[0].content))) }}",
         "rules": {
           "rules": [
             {
-              "value2": true,
-              "output": 0
+              "operation": "equal",
+              "value2": "true",
+              "outputKey": "output0"
+            },
+            {
+              "operation": "equal",
+              "value2": "false",
+              "outputKey": "output1"
             }
           ]
-        },
-        "fallbackOutput": 1
+        }
       },
       "id": "wa-gem-check",
       "name": "Gemini Success?",
       "type": "n8n-nodes-base.switch",
-      "typeVersion": 3,
+      "typeVersion": 2,
       "position": [
         2150,
         600
