@@ -289,7 +289,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"deepseek-chat\",\n  \"messages\": {{ JSON.stringify($('Prepare LLM Prompt').first().json.messages) }}\n}",
+        "jsonBody": "={{ {\n  \"model\": \"deepseek-chat\",\n  \"messages\": $('Prepare LLM Prompt').first().json.messages\n} }}",
         "options": {
           "timeout": 30000
         }
@@ -353,7 +353,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"gemini-2.0-flash\",\n  \"messages\": {{ JSON.stringify($('Prepare LLM Prompt').first().json.messages) }}\n}",
+        "jsonBody": "={{ {\n  \"model\": \"gemini-2.0-flash\",\n  \"messages\": $('Prepare LLM Prompt').first().json.messages\n} }}",
         "options": {
           "timeout": 30000
         }
@@ -425,7 +425,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"openrouter/free\",\n  \"messages\": {{ JSON.stringify($('Prepare LLM Prompt').first().json.messages) }}\n}",
+        "jsonBody": "={{ {\n  \"model\": \"openrouter/free\",\n  \"messages\": $('Prepare LLM Prompt').first().json.messages\n} }}",
         "options": {
           "timeout": 30000
         }
