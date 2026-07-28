@@ -91,8 +91,8 @@ export function TelegramCTA({
 }
 
 /** 
- * Floating WhatsApp button placed on the bottom-left corner
- * so it never overlaps with the AI Chat Widget trigger button on the bottom-right.
+ * Floating WhatsApp button placed on bottom-left.
+ * Icon-only on mobile (<640px) and icon + text on desktop to prevent any overlap with AI Chat widget.
  */
 export function FloatingWhatsApp() {
   return (
@@ -102,10 +102,10 @@ export function FloatingWhatsApp() {
       rel="noopener noreferrer"
       aria-label="Contactar por WhatsApp"
       title="Contactar por WhatsApp"
-      className="group fixed bottom-5 left-5 z-40 flex items-center gap-2 rounded-full bg-whatsapp pl-3.5 pr-4 py-3 text-white shadow-elevated ring-4 ring-white transition-all hover:scale-105 sm:bottom-6 sm:left-6"
+      className="fixed bottom-5 left-4 z-40 flex items-center gap-2 rounded-full bg-whatsapp p-3.5 text-white shadow-elevated ring-4 ring-white transition-all hover:scale-105 sm:bottom-6 sm:left-6 sm:px-4 sm:py-3"
     >
       <MessageCircle className="size-6 shrink-0" />
-      <span className="text-xs font-bold whitespace-nowrap sm:text-sm">
+      <span className="hidden text-xs font-bold whitespace-nowrap sm:inline sm:text-sm">
         WhatsApp
       </span>
     </a>

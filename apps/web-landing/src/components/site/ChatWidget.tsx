@@ -395,7 +395,7 @@ export function ChatWidget() {
         aria-label={open ? "Cerrar chat" : "Abrir chat con Sofía"}
         aria-expanded={open}
         className={cn(
-          "fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-full bg-gradient-to-r from-[var(--navy)] to-[var(--cyan)] pl-4 pr-5 py-3 text-white shadow-2xl shadow-[var(--cyan)]/40 ring-4 ring-white transition-all duration-300 hover:shadow-[var(--cyan)]/60 hover:scale-105 active:scale-95"
+          "fixed bottom-5 right-4 z-50 flex items-center gap-2.5 rounded-full bg-gradient-to-r from-[var(--navy)] to-[var(--cyan)] p-3.5 text-white shadow-2xl shadow-[var(--cyan)]/40 ring-4 ring-white transition-all duration-300 hover:shadow-[var(--cyan)]/60 hover:scale-105 active:scale-95 sm:bottom-6 sm:right-6 sm:pl-4 sm:pr-5 sm:py-3"
         )}
       >
         <div className="relative">
@@ -411,10 +411,10 @@ export function ChatWidget() {
             </>
           )}
         </div>
-        <span className="text-sm font-bold">
+        <span className="hidden text-sm font-bold sm:inline">
           {open ? "Cerrar" : "Chatear con Sofía"}
         </span>
-        {!open && <Sparkles className="size-3.5 opacity-80" />}
+        {!open && <Sparkles className="hidden size-3.5 opacity-80 sm:inline" />}
       </button>
     </>
   );
