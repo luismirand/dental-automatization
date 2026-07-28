@@ -58,6 +58,19 @@ function formatMarkdown(text: string): string {
   return text
     .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
     .replace(/\*(.*?)\*/g, "<em>$1</em>")
+    .replace(/\[(.*?)\]\((https:\/\/cal\.com\/[^)]+)\)/g, (match, label, url) => {
+      try {
+        const u = new URL(url);
+        const calLink = u.pathname.slice(1);
+        const name = u.searchParams.get("name") || "";
+        const email = u.searchParams.get("email") || "";
+        const config = JSON.stringify({ name, email, layout: "column_view" });
+        return `<button data-cal-link="${calLink}" data-cal-config='${config}' class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[var(--navy)] to-[var(--cyan)] px-4 py-2.5 text-xs font-bold text-white shadow-lg transition-all hover:brightness-110 active:scale-95 my-2 cursor-pointer w-full justify-center sm:w-auto"><span>📅</span> <span>${label}</span></button>`;
+      } catch {
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="font-medium text-[var(--cyan)] underline underline-offset-2 hover:text-[var(--navy)]">${label}</a>`;
+      }
+    })
+    .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="font-medium text-[var(--cyan)] underline underline-offset-2 hover:text-[var(--navy)]">$1</a>')
     .replace(/\n/g, "<br />");
 }
 
@@ -121,51 +134,11 @@ function ChatMessage({ msg }: { msg: Message }) {
   );
 }
 
-function NameForm({ onSubmit }: { onSubmit: (name: string) => void }) {
-  const [value, setValue] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { inputRef.current?.focus(); }, []);
-
-  return (
-    <div className="flex flex-col gap-3 p-4">
-      <div className="flex items-center gap-3 rounded-xl bg-gradient-to-br from-[var(--navy)]/5 to-[var(--cyan)]/5 p-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--navy)] to-[var(--cyan)]">
-          <Bot className="size-5 text-white" />
-        </div>
-        <div>
-          <p className="text-sm font-bold text-[var(--foreground)]">¡Hola! Soy Sofía 👋</p>
-          <p className="text-xs text-[var(--muted-foreground)]">¿Cómo te llamas? Para atenderte mejor.</p>
-        </div>
-      </div>
-      <form
-        onSubmit={(e) => { e.preventDefault(); if (value.trim()) onSubmit(value.trim()); }}
-        className="flex gap-2"
-      >
-        <input
-          ref={inputRef}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="Tu nombre..."
-          maxLength={40}
-          className="h-10 flex-1 rounded-xl border border-[var(--border)] bg-white px-3 text-sm outline-none ring-[var(--cyan)] transition-shadow focus:ring-2"
-        />
-        <button
-          type="submit"
-          disabled={!value.trim()}
-          className="h-10 rounded-xl bg-gradient-to-r from-[var(--navy)] to-[var(--cyan)] px-4 text-sm font-semibold text-white disabled:opacity-40"
-        >
-          Entrar
-        </button>
-      </form>
-    </div>
-  );
-}
-
 // ─── Main Widget ─────────────────────────────────────────────────────────────
 
 export function ChatWidget() {
   const [open, setOpen] = useState(false);
-  const [userName, setUserName] = useState<string | null>(null);
+  const userName = "Visitante";
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -173,12 +146,44 @@ export function ChatWidget() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Hydrate from sessionStorage
+  // Hydrate from sessionStorage & Initialize Cal.com Embed
   useEffect(() => {
+    // Cal.com Embed script loader
+    (function (C: any, A: string, L: string) {
+      let p = function (a: any, ar: any) { a.q.push(ar); };
+      let cal = C.Cal || function () {
+        let cal = C.Cal;
+        let ar = arguments;
+        if (!cal.loaded) {
+          cal.ns = {};
+          cal.q = cal.q || [];
+          p(cal, ar);
+          cal.loaded = true;
+        } else {
+          p(cal, ar);
+        }
+      };
+      C.Cal = cal;
+      if (!document.getElementById("cal-embed-script")) {
+        let s = document.createElement("script");
+        s.id = "cal-embed-script";
+        s.type = "text/javascript";
+        s.async = true;
+        s.src = "https://app.cal.com/embed/embed.js";
+        let x = document.getElementsByTagName("script")[0];
+        x?.parentNode?.insertBefore(s, x);
+      }
+      C.Cal("init", { origin: "https://cal.com" });
+      C.Cal("ui", {
+        theme: "light",
+        styles: { branding: { brandColor: "#0f172a" } },
+        hideEventTypeDetails: false,
+        layout: "column_view"
+      });
+    })(window as any, "https://app.cal.com/embed/embed.js", "Cal");
+
     try {
-      const savedName = sessionStorage.getItem(NAME_KEY);
       const savedMsgs = sessionStorage.getItem(MESSAGES_KEY);
-      if (savedName) setUserName(savedName);
       if (savedMsgs) {
         const parsed = JSON.parse(savedMsgs) as Message[];
         setMessages(parsed.length ? parsed : [buildWelcomeMessage()]);
@@ -204,13 +209,8 @@ export function ChatWidget() {
 
   // Focus input on open
   useEffect(() => {
-    if (open && userName) setTimeout(() => inputRef.current?.focus(), 120);
-  }, [open, userName]);
-
-  const handleNameSubmit = useCallback((name: string) => {
-    try { sessionStorage.setItem(NAME_KEY, name); } catch { /* ok */ }
-    setUserName(name);
-  }, []);
+    if (open) setTimeout(() => inputRef.current?.focus(), 120);
+  }, [open]);
 
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || loading) return;
@@ -257,7 +257,7 @@ export function ChatWidget() {
     }
   }, [loading, sessionId, userName]);
 
-  const showQuickReplies = messages.length <= 1 && !loading && userName !== null;
+  const showQuickReplies = messages.length <= 1 && !loading;
 
   return (
     <>
@@ -317,11 +317,8 @@ export function ChatWidget() {
         </div>
 
         {/* Body */}
-        {userName === null ? (
-          <NameForm onSubmit={handleNameSubmit} />
-        ) : (
-          <div className="flex min-h-0 flex-1 flex-col">
-            {/* Messages */}
+        <div className="flex min-h-0 flex-1 flex-col">
+          {/* Messages */}
             <div className="flex-1 space-y-3 overflow-y-auto overscroll-contain p-4 scroll-smooth">
               {messages.map((msg) => <ChatMessage key={msg.id} msg={msg} />)}
               {loading && <TypingIndicator />}
@@ -389,8 +386,7 @@ export function ChatWidget() {
               </p>
             </div>
           </div>
-        )}
-      </div>
+        </div>
 
       {/* ── Floating Trigger Button — bottom-right ── */}
       <button
