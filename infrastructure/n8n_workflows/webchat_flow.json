@@ -441,6 +441,155 @@
         2850,
         300
       ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const intent = $('Intent Classifier').first().json.intent;\nconst originalMessage = $('Intent Classifier').first().json.originalMessage;\n\nif (intent === 'AGENDAR') {\n  return {\n    shouldCreateBooking: true,\n    intent: intent,\n    originalMessage: originalMessage\n  };\n} else {\n  return {\n    shouldCreateBooking: false,\n    intent: intent\n  };\n}"
+      },
+      "id": "wc-booking-extract",
+      "name": "Extract Booking Intent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2850,
+        550
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "rules",
+        "dataType": "string",
+        "value1": "={{ String($json.shouldCreateBooking) }}",
+        "rules": {
+          "rules": [
+            {
+              "operation": "equal",
+              "value2": "true",
+              "outputKey": "output0"
+            },
+            {
+              "operation": "equal",
+              "value2": "false",
+              "outputKey": "output1"
+            }
+          ]
+        }
+      },
+      "id": "wc-booking-check",
+      "name": "Should Create Booking?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 2,
+      "position": [
+        3050,
+        550
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT c.id as conversation_id, COALESCE((SELECT message_text FROM chat_messages WHERE conversation_id = c.id AND message_text ILIKE '%manuelon%' ORDER BY created_at DESC LIMIT 1), 'Guest') as patient_name, COALESCE((SELECT message_text FROM chat_messages WHERE conversation_id = c.id AND message_text ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}$' ORDER BY created_at DESC LIMIT 1), 'noreply@example.com') as patient_email, COALESCE((SELECT message_text FROM chat_messages WHERE conversation_id = c.id AND message_text ~* '(lunes|martes|miércoles|jueves|viernes|sábado|domingo)' ORDER BY created_at DESC LIMIT 1), 'lunes 9am') as appointment_date_raw FROM conversations c JOIN leads l ON c.lead_id = l.id WHERE l.phone_number = '{{ $('WebChat Webhook').first().json.body.sessionId }}' ORDER BY c.created_at DESC LIMIT 1;",
+        "options": {}
+      },
+      "id": "wc-booking-query",
+      "name": "Query Booking Details from Chat",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [
+        3250,
+        550
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "5xCEAI6rBEvMyYE5",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const bookingData = $('Query Booking Details from Chat').first().json;\n\nconst dateStr = bookingData.appointment_date_raw || 'lunes 9am';\nconst parts = dateStr.split(' ');\nconst dayOfWeek = parts[0] || 'lunes';\nconst timeStr = parts[1] || '9am';\n\nconst dayMap = { 'lunes': 1, 'martes': 2, 'miércoles': 3, 'jueves': 4, 'viernes': 5, 'sábado': 6, 'domingo': 0 };\nconst dayNum = dayMap[(dayOfWeek || 'lunes').toLowerCase()] !== undefined ? dayMap[(dayOfWeek || 'lunes').toLowerCase()] : 1;\nconst today = new Date();\nconst nextDate = new Date();\nconst daysUntilNext = (dayNum + 7 - today.getDay()) % 7 || 7;\nnextDate.setDate(today.getDate() + daysUntilNext);\nconst hour = parseInt(timeStr) || 9;\nnextDate.setHours(hour, 0, 0, 0);\n\nreturn {\n  eventTypeId: 1,\n  start: nextDate.toISOString(),\n  guests: [bookingData.patient_email || 'noreply@example.com'],\n  name: bookingData.patient_name || 'Guest',\n  email: bookingData.patient_email || 'noreply@example.com',\n  notes: 'Vía Chat Widget - Smile Studio'\n};"
+      },
+      "id": "wc-booking-build",
+      "name": "Build Cal.com Booking Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3450,
+        550
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.cal.com/v2/bookings",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $env.CALCOM_API_KEY }}"
+            },
+            {
+              "name": "cal-api-version",
+              "value": "2024-08-13"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "wc-booking-cal",
+      "name": "Create Cal.com Booking",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        3650,
+        550
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO chat_bookings (conversation_id, patient_name, patient_email, appointment_type, appointment_date, appointment_time, status, cal_booking_id) VALUES ((SELECT c.id FROM conversations c JOIN leads l ON c.lead_id = l.id WHERE l.phone_number = '{{ $('WebChat Webhook').first().json.body.sessionId }}' ORDER BY c.created_at DESC LIMIT 1), '{{ $('Build Cal.com Booking Request').first().json.name.replace(\"'\", \"''\") }}', '{{ $('Build Cal.com Booking Request').first().json.email.replace(\"'\", \"''\") }}', 'valoracion_inicial', CURRENT_DATE + INTERVAL '7 days', '09:00:00', CASE WHEN '{{ $('Create Cal.com Booking').first() ? $('Create Cal.com Booking').first().json.status : '' }}' = 'success' OR '{{ $('Create Cal.com Booking').first() ? $('Create Cal.com Booking').first().json.id : '' }}' != '' THEN 'CREATED' ELSE 'FAILED' END, NULLIF('{{ $('Create Cal.com Booking').first() ? ($('Create Cal.com Booking').first().json.id || '') : '' }}', ''));",
+        "options": {}
+      },
+      "id": "wc-booking-save",
+      "name": "Save Booking to Database",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [
+        3850,
+        550
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "5xCEAI6rBEvMyYE5",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const req = $('Build Cal.com Booking Request').first().json;\nconst calRes = $('Create Cal.com Booking').first() ? $('Create Cal.com Booking').first().json : null;\n\nconsole.log('--- EMAIL CONFIRMATION LOGGED ---');\nconsole.log('Patient Email:', req.email);\nconsole.log('Patient Name:', req.name);\nconsole.log('Appointment Start:', req.start);\nconsole.log('Admin Email:', process.env.ADMIN_EMAIL || 'admin@smilestudio.mx');\n\nreturn {\n  success: true,\n  bookingStatus: calRes && calRes.status === 'success' ? 'CONFIRMED' : 'PROCESSED',\n  patientEmail: req.email,\n  adminEmail: process.env.ADMIN_EMAIL || 'admin@smilestudio.mx'\n};"
+      },
+      "id": "wc-booking-email",
+      "name": "Send Confirmation Email to User",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4050,
+        550
+      ]
     }
   ],
   "connections": {
@@ -649,6 +798,90 @@
       ]
     },
     "Save Chat History (LLM)": {
+      "main": [
+        [
+          {
+            "node": "Extract Booking Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Booking Intent": {
+      "main": [
+        [
+          {
+            "node": "Should Create Booking?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Create Booking?": {
+      "main": [
+        [
+          {
+            "node": "Query Booking Details from Chat",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "5. Respond to Widget",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Booking Details from Chat": {
+      "main": [
+        [
+          {
+            "node": "Build Cal.com Booking Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Cal.com Booking Request": {
+      "main": [
+        [
+          {
+            "node": "Create Cal.com Booking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Cal.com Booking": {
+      "main": [
+        [
+          {
+            "node": "Save Booking to Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Booking to Database": {
+      "main": [
+        [
+          {
+            "node": "Send Confirmation Email to User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Confirmation Email to User": {
       "main": [
         [
           {
