@@ -6,3 +6,17 @@ services:
   n8n:
     volumes:
       - ./n8n_data:/home/node/.n8n
+
+configs:
+  postgres_init:
+    file: ./init-db.sql
+  postgres_appointments_migration:
+    file: ./migrations/001_extend_appointments.sql
+  knowledge_identity:
+    file: ../docs/conocimiento/identidad.md
+  knowledge_scheduling:
+    file: ../docs/conocimiento/protocolo_agendamiento.md
+  knowledge_services:
+    file: ../docs/conocimiento/servicios_precios.md
+  knowledge_hours:
+    file: ../docs/conocimiento/horarios_ubicacion.md
