@@ -580,16 +580,41 @@
     },
     {
       "parameters": {
-        "jsCode": "const req = $('Build Cal.com Booking Request').first().json;\nconst calRes = $('Create Cal.com Booking').first() ? $('Create Cal.com Booking').first().json : null;\nconst adminEmail = (typeof $env !== 'undefined' && $env.ADMIN_EMAIL) ? $env.ADMIN_EMAIL : 'admin@smilestudio.mx';\n\nreturn {\n  success: true,\n  bookingStatus: calRes && (calRes.status === 'success' || calRes.id) ? 'CONFIRMED' : 'PROCESSED',\n  patientEmail: req.email,\n  adminEmail: adminEmail\n};"
+        "fromEmail": "={{ $env.SMTP_USER || 'noreply@smilestudio.mx' }}",
+        "toEmail": "={{ $('Build Cal.com Booking Request').first().json.email }}",
+        "subject": "✅ Tu cita en Smile Studio está confirmada",
+        "isBodyHtml": true,
+        "body": "=<h2>¡Tu cita está confirmada! ✅</h2><p>Hola {{ $('Build Cal.com Booking Request').first().json.name }},</p><p><strong>Detalles de tu cita:</strong></p><ul><li>📅 Fecha: {{ new Date($('Build Cal.com Booking Request').first().json.start).toLocaleDateString('es-MX', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'}) }}</li><li>🕒 Hora: {{ new Date($('Build Cal.com Booking Request').first().json.start).toLocaleTimeString('es-MX', {hour: '2-digit', minute:'2-digit'}) }}</li><li>🏷️ Tipo: Valoración Inicial ($350 MXN)</li><li>📍 Ubicación: Av. Reforma 250, Piso 4, Col. Juárez, CDMX</li></ul><p><strong>🔗 Confirma tu asistencia aquí:</strong></p><a href=\"{{ $('Create Cal.com Booking').first().json.url || 'https://cal.com/luis-miranda' }}\" style=\"background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;\">Ir a Cal.com</a><p>¿Preguntas? Contáctanos:</p><ul><li>📞 WhatsApp: +52 55 1234 5678</li><li>📧 Email: hola@smilestudio.mx</li></ul><p>¡Te esperamos! 🦷</p>",
+        "options": {}
       },
       "alwaysOutputData": true,
       "onError": "continueRegularOutput",
       "id": "wc-booking-email",
       "name": "Send Confirmation Email to User",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
       "position": [
         4050,
+        550
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.SMTP_USER || 'noreply@smilestudio.mx' }}",
+        "toEmail": "={{ $env.ADMIN_EMAIL || 'admin@smilestudio.mx' }}",
+        "subject": "=📞 Nueva cita agendada: {{ $('Build Cal.com Booking Request').first().json.name }}",
+        "isBodyHtml": true,
+        "body": "=<h3>Nueva cita creada desde Chat Widget</h3><table border=\"1\" style=\"border-collapse: collapse; width: 100%; margin: 20px 0;\"><tr><td style=\"padding: 10px;\"><strong>👤 Paciente</strong></td><td style=\"padding: 10px;\">{{ $('Build Cal.com Booking Request').first().json.name }}</td></tr><tr><td style=\"padding: 10px;\"><strong>📧 Email</strong></td><td style=\"padding: 10px;\">{{ $('Build Cal.com Booking Request').first().json.email }}</td></tr><tr><td style=\"padding: 10px;\"><strong>📅 Fecha/Hora</strong></td><td style=\"padding: 10px;\">{{ new Date($('Build Cal.com Booking Request').first().json.start).toLocaleString('es-MX') }}</td></tr><tr><td style=\"padding: 10px;\"><strong>🏷️ Tipo</strong></td><td style=\"padding: 10px;\">Valoración Inicial</td></tr><tr><td style=\"padding: 10px;\"><strong>🔗 ID Cal.com</strong></td><td style=\"padding: 10px;\">{{ $('Create Cal.com Booking').first().json.id || 'N/A' }}</td></tr></table><p><a href=\"https://cal.com/luis-miranda/bookings\">Ver en Cal.com →</a></p>",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "id": "wc-booking-admin-email",
+      "name": "Send Admin Notification",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        4250,
         550
       ]
     }
@@ -884,6 +909,17 @@
       ]
     },
     "Send Confirmation Email to User": {
+      "main": [
+        [
+          {
+            "node": "Send Admin Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Admin Notification": {
       "main": [
         [
           {
