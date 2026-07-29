@@ -3,7 +3,12 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { MessageCircle, X, Send, Bot, User, Loader2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { WEBCHAT_WEBHOOK_URL, TELEGRAM_BOT_URL, CLINIC } from "@/lib/site-config";
+import {
+  WEBCHAT_WEBHOOK_URL,
+  TELEGRAM_BOT_URL,
+  CAL_BOOKING_URL,
+  CLINIC,
+} from "@/lib/site-config";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -20,11 +25,16 @@ interface QuickReply {
   emoji: string;
 }
 
+interface BookingState {
+  step: "idle" | "name" | "email";
+  name: string;
+}
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const SESSION_KEY = "smile_chat_session";
 const MESSAGES_KEY = "smile_chat_messages";
-const NAME_KEY = "smile_chat_name";
+const BOOKING_KEY = "smile_chat_booking";
 
 const QUICK_REPLIES: QuickReply[] = [
   { emoji: "📅", label: "Agendar cita", message: "Quiero agendar una cita" },
@@ -52,6 +62,45 @@ function getOrCreateSessionId(): string {
 
 function buildWelcomeMessage(): Message {
   return { id: "welcome", role: "assistant", text: WELCOME_TEXT, ts: Date.now() };
+}
+
+function buildMessage(role: Message["role"], text: string): Message {
+  return {
+    id: `${role === "user" ? "u" : "b"}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    role,
+    text,
+    ts: Date.now(),
+  };
+}
+
+function getBookingState(): BookingState {
+  try {
+    const saved = sessionStorage.getItem(BOOKING_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved) as BookingState;
+      if (parsed.step === "name" || parsed.step === "email") return parsed;
+    }
+  } catch {
+    // Start a fresh booking flow when storage is unavailable or invalid.
+  }
+  return { step: "idle", name: "" };
+}
+
+function isBookingRequest(text: string): boolean {
+  return /\b(agendar|agenda|cita|reservar|reserva|turno|disponibilidad)\b/i.test(text);
+}
+
+function isValidName(text: string): boolean {
+  return /^[\p{L}\p{M} .-]{2,80}$/u.test(text.trim());
+}
+
+function isValidEmail(text: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text.trim());
+}
+
+function buildPrefilledCalUrl(name: string, email: string): string {
+  const params = new URLSearchParams({ name, email });
+  return `${CAL_BOOKING_URL}?${params.toString()}`;
 }
 
 function formatMarkdown(text: string): string {
@@ -142,6 +191,7 @@ export function ChatWidget() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [booking, setBooking] = useState<BookingState>({ step: "idle", name: "" });
   const [sessionId] = useState(getOrCreateSessionId);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -193,6 +243,7 @@ export function ChatWidget() {
     } catch {
       setMessages([buildWelcomeMessage()]);
     }
+    setBooking(getBookingState());
   }, []);
 
   // Persist messages
@@ -202,22 +253,94 @@ export function ChatWidget() {
     }
   }, [messages]);
 
+  useEffect(() => {
+    try {
+      if (booking.step === "idle") sessionStorage.removeItem(BOOKING_KEY);
+      else sessionStorage.setItem(BOOKING_KEY, JSON.stringify(booking));
+    } catch {
+      // The chat remains usable when storage is unavailable.
+    }
+  }, [booking]);
+
   // Auto-scroll
   useEffect(() => {
     if (open) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading, open]);
 
-  // Focus input on open
+  // Keep the conversation keyboard-ready after local and remote responses.
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 120);
-  }, [open]);
+    if (!open || loading) return;
+    const focusTimer = window.setTimeout(() => {
+      inputRef.current?.focus({ preventScroll: true });
+    }, 80);
+    return () => window.clearTimeout(focusTimer);
+  }, [open, loading, messages.length, booking.step]);
 
   const sendMessage = useCallback(async (text: string) => {
-    if (!text.trim() || loading) return;
+    const trimmed = text.trim();
+    if (!trimmed || loading) return;
     setInput("");
 
-    const userMsg: Message = { id: `u_${Date.now()}`, role: "user", text: text.trim(), ts: Date.now() };
+    const userMsg = buildMessage("user", trimmed);
     setMessages((prev) => [...prev, userMsg]);
+
+    if (booking.step !== "idle" && /^(cancelar|salir|otra pregunta)$/i.test(trimmed)) {
+      setBooking({ step: "idle", name: "" });
+      setMessages((prev) => [
+        ...prev,
+        buildMessage("assistant", "Sin problema, cancelé el agendamiento. ¿En qué más te puedo ayudar?"),
+      ]);
+      return;
+    }
+
+    if (booking.step === "name") {
+      if (!isValidName(trimmed)) {
+        setMessages((prev) => [
+          ...prev,
+          buildMessage("assistant", "Escribe tu nombre usando solo letras, espacios, puntos o guiones."),
+        ]);
+        return;
+      }
+      setBooking({ step: "email", name: trimmed });
+      setMessages((prev) => [
+        ...prev,
+        buildMessage("assistant", "Gracias. ¿Cuál es tu correo electrónico?"),
+      ]);
+      return;
+    }
+
+    if (booking.step === "email") {
+      if (!isValidEmail(trimmed)) {
+        setMessages((prev) => [
+          ...prev,
+          buildMessage("assistant", "Ese correo no parece válido. Revísalo y vuelve a escribirlo."),
+        ]);
+        return;
+      }
+      const calUrl = buildPrefilledCalUrl(booking.name, trimmed);
+      setBooking({ step: "idle", name: "" });
+      setMessages((prev) => [
+        ...prev,
+        buildMessage(
+          "assistant",
+          `¡Listo! Tus datos están preparados. Elige directamente el horario disponible que prefieras:\n\n[Elegir horario disponible](${calUrl})`,
+        ),
+      ]);
+      return;
+    }
+
+    if (isBookingRequest(trimmed)) {
+      setBooking({ step: "name", name: "" });
+      setMessages((prev) => [
+        ...prev,
+        buildMessage(
+          "assistant",
+          "Claro, te ayudaré a preparar la agenda sin hacerte esperar. ¿Cuál es tu nombre completo?",
+        ),
+      ]);
+      return;
+    }
+
     setLoading(true);
 
     // Timeout de 60 segundos para LLMs que pueden tardar
@@ -228,7 +351,7 @@ export function ChatWidget() {
       const res = await fetch(WEBCHAT_WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, userName: userName ?? "Visitante", message: text.trim() }),
+        body: JSON.stringify({ sessionId, userName: userName ?? "Visitante", message: trimmed }),
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
@@ -255,7 +378,7 @@ export function ChatWidget() {
     } finally {
       setLoading(false);
     }
-  }, [loading, sessionId, userName]);
+  }, [booking, loading, sessionId, userName]);
 
   const showQuickReplies = messages.length <= 1 && !loading;
 
@@ -357,7 +480,13 @@ export function ChatWidget() {
                   id="chat-input"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Escribe tu mensaje..."
+                  placeholder={
+                    booking.step === "name"
+                      ? "Escribe tu nombre completo..."
+                      : booking.step === "email"
+                        ? "Escribe tu correo..."
+                        : "Escribe tu mensaje..."
+                  }
                   maxLength={500}
                   disabled={loading}
                   className="h-10 flex-1 rounded-xl border border-[var(--border)] bg-[var(--muted)] px-3.5 text-sm outline-none ring-[var(--cyan)] transition-all focus:bg-white focus:ring-2 disabled:opacity-50"

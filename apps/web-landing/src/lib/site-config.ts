@@ -24,6 +24,7 @@ export const WHATSAPP_URGENT_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${enco
 
 export const CAL_USER = "luis-miranda";
 export const CAL_URL = `https://cal.com/${CAL_USER}`;
+export const CAL_BOOKING_URL = `${CAL_URL}/30min`;
 
 // Google Maps embed (no API key required)
 export const MAPS_EMBED = `https://maps.google.com/maps?q=${encodeURIComponent(
