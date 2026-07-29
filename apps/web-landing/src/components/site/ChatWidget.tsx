@@ -26,7 +26,7 @@ interface QuickReply {
 }
 
 interface BookingState {
-  step: "idle" | "name" | "email";
+  step: "idle" | "confirm" | "name" | "email";
   name: string;
 }
 
@@ -78,7 +78,11 @@ function getBookingState(): BookingState {
     const saved = sessionStorage.getItem(BOOKING_KEY);
     if (saved) {
       const parsed = JSON.parse(saved) as BookingState;
-      if (parsed.step === "name" || parsed.step === "email") return parsed;
+      if (
+        parsed.step === "confirm" ||
+        parsed.step === "name" ||
+        parsed.step === "email"
+      ) return parsed;
     }
   } catch {
     // Start a fresh booking flow when storage is unavailable or invalid.
@@ -88,6 +92,22 @@ function getBookingState(): BookingState {
 
 function isBookingRequest(text: string): boolean {
   return /\b(agendar|agenda|cita|reservar|reserva|turno|disponibilidad)\b/i.test(text);
+}
+
+function isAffirmative(text: string): boolean {
+  return /^(s[ií]|claro|va|vale|ok|okay|perfecto|de acuerdo|por supuesto)(?:$|[\s,.!?])/i.test(text.trim());
+}
+
+function isNegative(text: string): boolean {
+  return /^(no|ahora no|despu[eé]s|mejor no)(?:$|[\s,.!?])/i.test(text.trim());
+}
+
+function isDateOrTimeMessage(text: string): boolean {
+  return /\b(lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|hoy|mañana|\d{1,2}(?::\d{2})?\s*(?:a\.?\s*m\.?|p\.?\s*m\.?|hrs?|horas?))\b/i.test(text);
+}
+
+function offersBooking(text: string): boolean {
+  return /\b(te gustar[ií]a|quieres|deseas|podemos|quieres que te ayude a)\b[\s\S]{0,60}\b(agendar|apartar|reservar|cita)\b/i.test(text);
 }
 
 function isValidName(text: string): boolean {
@@ -293,6 +313,43 @@ export function ChatWidget() {
       return;
     }
 
+    if (booking.step === "confirm") {
+      if (isAffirmative(trimmed)) {
+        setBooking({ step: "name", name: "" });
+        setMessages((prev) => [
+          ...prev,
+          buildMessage("assistant", "Perfecto. ¿Cuál es tu nombre completo?"),
+        ]);
+        return;
+      }
+      if (isNegative(trimmed)) {
+        setBooking({ step: "idle", name: "" });
+        setMessages((prev) => [
+          ...prev,
+          buildMessage("assistant", "Está bien. ¿En qué más te ayudo?"),
+        ]);
+        return;
+      }
+      setBooking({ step: "idle", name: "" });
+    }
+
+    const lastAssistantMessage = [...messages]
+      .reverse()
+      .find((message) => message.role === "assistant");
+    if (
+      booking.step === "idle" &&
+      isAffirmative(trimmed) &&
+      lastAssistantMessage &&
+      offersBooking(lastAssistantMessage.text)
+    ) {
+      setBooking({ step: "name", name: "" });
+      setMessages((prev) => [
+        ...prev,
+        buildMessage("assistant", "Perfecto. ¿Cuál es tu nombre completo?"),
+      ]);
+      return;
+    }
+
     if (booking.step === "name") {
       if (!isValidName(trimmed)) {
         setMessages((prev) => [
@@ -341,6 +398,18 @@ export function ChatWidget() {
       return;
     }
 
+    if (isDateOrTimeMessage(trimmed)) {
+      setBooking({ step: "name", name: "" });
+      setMessages((prev) => [
+        ...prev,
+        buildMessage(
+          "assistant",
+          "El horario se confirma directamente en Cal.com. Primero, ¿cuál es tu nombre completo?",
+        ),
+      ]);
+      return;
+    }
+
     setLoading(true);
 
     // Timeout de 60 segundos para LLMs que pueden tardar
@@ -360,6 +429,9 @@ export function ChatWidget() {
       const replyText =
         data?.reply ??
         "Lo siento, tuve un problema técnico. Por favor intenta de nuevo o escríbenos al WhatsApp 😊";
+      if (offersBooking(replyText)) {
+        setBooking({ step: "confirm", name: "" });
+      }
       setMessages((prev) => [...prev, { id: `b_${Date.now()}`, role: "assistant", text: replyText, ts: Date.now() }]);
     } catch (err: unknown) {
       clearTimeout(timeoutId);
@@ -378,7 +450,7 @@ export function ChatWidget() {
     } finally {
       setLoading(false);
     }
-  }, [booking, loading, sessionId, userName]);
+  }, [booking, loading, messages, sessionId, userName]);
 
   const showQuickReplies = messages.length <= 1 && !loading;
 
