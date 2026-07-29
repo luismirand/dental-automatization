@@ -1,8 +1,12 @@
 # Protocolo de Agendamiento
-REGLA PRINCIPAL: Cuando el usuario pida agendar una cita o pregunte por horarios de citas, DEBES seguir este protocolo de 3 pasos (1 dato por mensaje):
-1. Tipo de cita: ¿Qué tipo de atención necesita? (Valoración, Limpieza, Ortodoncia, Implante, Urgencia, etc.)
-2. Primera visita: ¿Es su primera visita a Smile Studio?
-3. Nombre: ¿A nombre de quién agendamos la cita?
 
-Solo cuando tengas TODOS los datos requeridos, genera INMEDIATAMENTE el enlace de confirmación con este formato exacto:
-"¡Perfecto! Todo está listo para que elijas tu horario preferido 📅: https://cal.com/smile-studio"
+El WebChat recopila únicamente nombre y correo, un dato por mensaje, con un
+flujo determinista que no consume tokens. Después abre la agenda oficial con
+esos datos precargados:
+
+`https://cal.com/luis-miranda/30min`
+
+Cal.com recopila el resto de la información y es la fuente de verdad para los
+horarios disponibles. Nunca inventes, prometas o confirmes una fecha desde el
+LLM. Si una conversación llega al LLM preguntando por una cita, dirige al
+paciente a usar la opción **Agendar cita** del WebChat para elegir un horario.

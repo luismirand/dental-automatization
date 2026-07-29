@@ -24,6 +24,7 @@ export const WHATSAPP_URGENT_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${enco
 
 export const CAL_USER = "luis-miranda";
 export const CAL_URL = `https://cal.com/${CAL_USER}`;
+export const CAL_BOOKING_URL = `${CAL_URL}/30min`;
 
 // Google Maps embed (no API key required)
 export const MAPS_EMBED = `https://maps.google.com/maps?q=${encodeURIComponent(
@@ -36,8 +37,8 @@ export const WAZE_DIRECTIONS = `https://waze.com/ul?q=${encodeURIComponent(CLINI
 
 // Chat Widget — apunta directamente a n8n (CORS confirmado OK con Access-Control-Allow-Origin: *)
 export const WEBCHAT_WEBHOOK_URL =
-  (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.PUBLIC_WEBCHAT_WEBHOOK_URL) ||
-  "https://drainpipe-latch-frolic.ngrok-free.dev/webhook/webchat";
+  (typeof import.meta !== "undefined" && import.meta.env?.PUBLIC_WEBCHAT_WEBHOOK_URL) ||
+  "/api/webchat";
 
 // Telegram Bot
 export const TELEGRAM_BOT_URL = "https://t.me/Clinica_Smiles_Bot";

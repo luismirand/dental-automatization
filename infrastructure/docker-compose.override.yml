@@ -1,0 +1,8 @@
+services:
+  postgres:
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+
+  n8n:
+    volumes:
+      - ./n8n_data:/home/node/.n8n

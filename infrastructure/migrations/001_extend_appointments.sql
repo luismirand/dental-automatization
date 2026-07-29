@@ -39,7 +39,7 @@ CREATE INDEX IF NOT EXISTS idx_appointments_channel
   ON appointments(channel);
 
 -- ============================================================
--- After running this migration, register the Cal.com webhook:
---   URL: https://<your-ngrok>.ngrok-free.dev/webhook/calcom-booking
+-- After running this migration, register the Cal.com production webhook:
+--   URL: https://<your-n8n-host>/webhook/calcom-booking
 --   Events: BOOKING_CREATED, BOOKING_CANCELLED, BOOKING_RESCHEDULED
 -- ============================================================
