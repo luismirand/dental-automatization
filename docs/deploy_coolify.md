@@ -93,7 +93,8 @@ Do not deploy until every required environment variable has been configured.
 
 Coolify must load only `docker-compose.yml`. Local `docker compose` commands
 automatically load `docker-compose.override.yml`, which preserves the existing
-bind-mounted development data without changing the production volumes.
+bind-mounted development data and local config paths without changing the
+production volumes or the repository-root config paths used by Coolify.
 
 ## 5. Configure production secrets
 
