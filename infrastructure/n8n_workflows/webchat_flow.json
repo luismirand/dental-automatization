@@ -580,8 +580,10 @@
     },
     {
       "parameters": {
-        "jsCode": "const req = $('Build Cal.com Booking Request').first().json;\nconst calRes = $('Create Cal.com Booking').first() ? $('Create Cal.com Booking').first().json : null;\n\nconsole.log('--- EMAIL CONFIRMATION LOGGED ---');\nconsole.log('Patient Email:', req.email);\nconsole.log('Patient Name:', req.name);\nconsole.log('Appointment Start:', req.start);\nconsole.log('Admin Email:', process.env.ADMIN_EMAIL || 'admin@smilestudio.mx');\n\nreturn {\n  success: true,\n  bookingStatus: calRes && calRes.status === 'success' ? 'CONFIRMED' : 'PROCESSED',\n  patientEmail: req.email,\n  adminEmail: process.env.ADMIN_EMAIL || 'admin@smilestudio.mx'\n};"
+        "jsCode": "const req = $('Build Cal.com Booking Request').first().json;\nconst calRes = $('Create Cal.com Booking').first() ? $('Create Cal.com Booking').first().json : null;\nconst adminEmail = (typeof $env !== 'undefined' && $env.ADMIN_EMAIL) ? $env.ADMIN_EMAIL : 'admin@smilestudio.mx';\n\nreturn {\n  success: true,\n  bookingStatus: calRes && (calRes.status === 'success' || calRes.id) ? 'CONFIRMED' : 'PROCESSED',\n  patientEmail: req.email,\n  adminEmail: adminEmail\n};"
       },
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
       "id": "wc-booking-email",
       "name": "Send Confirmation Email to User",
       "type": "n8n-nodes-base.code",
