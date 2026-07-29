@@ -10,9 +10,12 @@ services:
     ports:
       - "127.0.0.1:${POSTGRES_PORT}:5432"
     volumes:
-      - ./postgres_data:/var/lib/postgresql/data
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
-      - ./migrations/001_extend_appointments.sql:/docker-entrypoint-initdb.d/002_extend_appointments.sql:ro
+      - postgres_data:/var/lib/postgresql/data
+    configs:
+      - source: postgres_init
+        target: /docker-entrypoint-initdb.d/001_init-db.sql
+      - source: postgres_appointments_migration
+        target: /docker-entrypoint-initdb.d/002_extend_appointments.sql
     networks:
       - n8n_network
     healthcheck:
@@ -62,9 +65,16 @@ services:
       - DB_POSTGRESDB_USER=${POSTGRES_USER}
       - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
-      - ./n8n_data:/home/node/.n8n
-      - ./n8n_workflows:/n8n_workflows:ro
-      - ../docs/conocimiento:/conocimiento:ro
+      - n8n_data:/home/node/.n8n
+    configs:
+      - source: knowledge_identity
+        target: /conocimiento/identidad.md
+      - source: knowledge_scheduling
+        target: /conocimiento/protocolo_agendamiento.md
+      - source: knowledge_services
+        target: /conocimiento/servicios_precios.md
+      - source: knowledge_hours
+        target: /conocimiento/horarios_ubicacion.md
     networks:
       - n8n_network
     depends_on:
@@ -80,3 +90,21 @@ services:
 networks:
   n8n_network:
     driver: bridge
+
+volumes:
+  postgres_data:
+  n8n_data:
+
+configs:
+  postgres_init:
+    file: ./init-db.sql
+  postgres_appointments_migration:
+    file: ./migrations/001_extend_appointments.sql
+  knowledge_identity:
+    file: ../docs/conocimiento/identidad.md
+  knowledge_scheduling:
+    file: ../docs/conocimiento/protocolo_agendamiento.md
+  knowledge_services:
+    file: ../docs/conocimiento/servicios_precios.md
+  knowledge_hours:
+    file: ../docs/conocimiento/horarios_ubicacion.md

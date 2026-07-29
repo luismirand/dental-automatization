@@ -85,11 +85,15 @@ In Coolify:
 3. Connect the GitHub repository.
 4. Select branch `main`.
 5. Select Docker Compose as the build/deployment type.
-6. Set the base directory to `infrastructure`.
-7. Set the Compose file to `docker-compose.yml`.
+6. Set the base directory to `/`.
+7. Set the Compose file to `/infrastructure/docker-compose.yml`.
 8. Enable automatic deployment when `main` changes.
 
 Do not deploy until every required environment variable has been configured.
+
+Coolify must load only `docker-compose.yml`. Local `docker compose` commands
+automatically load `docker-compose.override.yml`, which preserves the existing
+bind-mounted development data without changing the production volumes.
 
 ## 5. Configure production secrets
 
@@ -140,8 +144,12 @@ N8N_SECURE_COOKIE=true
 
 ## 7. Deploy and initialize
 
+Reload the Compose file and confirm that Coolify detects two named volumes
+(`postgres_data` and `n8n_data`) plus the versioned SQL and knowledge files as
+Compose configs, not persistent directories.
+
 Deploy from Coolify and wait until both containers are healthy. On a new empty
-PostgreSQL volume, the initialization and migration scripts run automatically.
+PostgreSQL volume, the initialization and migration configs run automatically.
 
 For an existing database, apply pending migrations explicitly after taking a
 backup:
