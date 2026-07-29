@@ -30,6 +30,12 @@ interface BookingState {
   name: string;
 }
 
+interface MobileViewport {
+  height: number;
+  offsetTop: number;
+  keyboardOpen: boolean;
+}
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const SESSION_KEY = "smile_chat_session";
@@ -213,6 +219,7 @@ export function ChatWidget() {
   const [loading, setLoading] = useState(false);
   const [booking, setBooking] = useState<BookingState>({ step: "idle", name: "" });
   const [sessionId] = useState(getOrCreateSessionId);
+  const [mobileViewport, setMobileViewport] = useState<MobileViewport | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -281,6 +288,41 @@ export function ChatWidget() {
       // The chat remains usable when storage is unavailable.
     }
   }, [booking]);
+
+  // Follow the visible viewport while a mobile on-screen keyboard is open.
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    const updateViewport = () => {
+      const isMobile = window.matchMedia("(max-width: 639px)").matches;
+      const keyboardOpen =
+        isMobile && window.innerHeight - viewport.height > 120;
+
+      setMobileViewport({
+        height: viewport.height,
+        offsetTop: viewport.offsetTop,
+        keyboardOpen,
+      });
+
+      if (keyboardOpen) {
+        window.requestAnimationFrame(() => {
+          bottomRef.current?.scrollIntoView({ block: "end" });
+        });
+      }
+    };
+
+    updateViewport();
+    viewport.addEventListener("resize", updateViewport);
+    viewport.addEventListener("scroll", updateViewport);
+    window.addEventListener("orientationchange", updateViewport);
+
+    return () => {
+      viewport.removeEventListener("resize", updateViewport);
+      viewport.removeEventListener("scroll", updateViewport);
+      window.removeEventListener("orientationchange", updateViewport);
+    };
+  }, []);
 
   // Auto-scroll
   useEffect(() => {
@@ -475,7 +517,16 @@ export function ChatWidget() {
             ? "translate-y-0 opacity-100 scale-100 pointer-events-auto"
             : "translate-y-4 opacity-0 scale-95 pointer-events-none"
         )}
-        style={{ maxHeight: "min(600px, calc(100dvh - 7rem))" }}
+        style={
+          mobileViewport?.keyboardOpen
+            ? {
+                top: `${mobileViewport.offsetTop + 8}px`,
+                bottom: "auto",
+                height: `${Math.max(240, mobileViewport.height - 16)}px`,
+                maxHeight: `${Math.max(240, mobileViewport.height - 16)}px`,
+              }
+            : { maxHeight: "min(600px, calc(100dvh - 7rem))" }
+        }
       >
         {/* Header */}
         <div className="flex shrink-0 items-center gap-3 bg-gradient-to-r from-[var(--navy)] to-[var(--cyan)] px-4 py-3">
@@ -542,7 +593,7 @@ export function ChatWidget() {
             </div>
 
             {/* Input bar */}
-            <div className="shrink-0 border-t border-[var(--border)] bg-white px-3 pb-3 pt-2">
+            <div className="shrink-0 border-t border-[var(--border)] bg-white px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2">
               <form
                 onSubmit={(e) => { e.preventDefault(); sendMessage(input); }}
                 className="flex items-center gap-2"
@@ -561,7 +612,7 @@ export function ChatWidget() {
                   }
                   maxLength={500}
                   disabled={loading}
-                  className="h-10 flex-1 rounded-xl border border-[var(--border)] bg-[var(--muted)] px-3.5 text-sm outline-none ring-[var(--cyan)] transition-all focus:bg-white focus:ring-2 disabled:opacity-50"
+                  className="h-10 min-w-0 flex-1 rounded-xl border border-[var(--border)] bg-[var(--muted)] px-3.5 text-base outline-none ring-[var(--cyan)] transition-all focus:bg-white focus:ring-2 disabled:opacity-50 sm:text-sm"
                   autoComplete="off"
                 />
                 <button
