@@ -29,16 +29,14 @@ verified end to end in a production environment.
 
 - Clinic identity, contact details, doctors, prices and some links still include
   demonstration values.
-- The WebChat frontend contains a temporary ngrok URL as a fallback.
-- `.env.example` does not document every variable used by the current stack.
-- n8n uses an unpinned `latest` container image.
 - Imported workflows may require credential reassignment in a new n8n instance.
 - The anti-race strategy described for simultaneous messages needs end-to-end
   verification.
 - Database migrations, backups and restore procedures need production
   validation.
 - Documentation does not yet describe every implemented channel and fallback.
-- Production DNS, deployment, monitoring and smoke tests are not complete.
+- Oracle, Coolify and Vercel deployment, monitoring and smoke tests are not
+  complete.
 
 ## Target Low-Cost Architecture
 
