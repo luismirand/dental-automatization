@@ -29,6 +29,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Validate n8n workflow exports
+        shell: bash
+        run: |
+          for workflow in infrastructure/n8n_workflows/*.json; do
+            node -e "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))" "$workflow"
+          done
       - name: Validate Docker Compose
         working-directory: infrastructure
         run: docker compose --env-file .env.example config --quiet
