@@ -2,71 +2,83 @@
 
 Last reviewed: 2026-07-29.
 
-This file is the concise operational snapshot of the repository. Detailed
-design remains in the other files under `docs/`.
-
 ## Current Phase
 
-The project is an advanced functional MVP. The main components exist and the
-landing builds successfully, but the complete patient journey has not yet been
-verified end to end in a production environment.
+The project is a production-deployed functional MVP. The public landing,
+WebChat, scheduling flow, n8n orchestration, and PostgreSQL persistence have
+been validated with synthetic test data.
 
-## Implemented
-
-- Astro 7 static landing with React islands and Tailwind CSS.
-- Responsive clinic sections, WhatsApp calls to action and location links.
-- Embedded Cal.com scheduling.
-- WebChat widget connected to an n8n webhook.
-- Versioned n8n workflows for WebChat, WhatsApp, Telegram and Cal.com booking
-  events.
-- LLM provider routing through DeepSeek, Gemini and OpenRouter.
-- PostgreSQL schema for leads, conversations, messages and appointments.
-- Appointment classification migration.
-- Docker Compose stack for PostgreSQL and n8n.
-- Deployment guidance for Coolify and Meta webhook setup.
-
-## Known Gaps
-
-- Clinic identity, contact details, doctors, prices and some links still include
-  demonstration values.
-- Imported workflows may require credential reassignment in a new n8n instance.
-- The anti-race strategy described for simultaneous messages needs end-to-end
-  verification.
-- Database migrations, backups and restore procedures need production
-  validation.
-- Documentation does not yet describe every implemented channel and fallback.
-- Oracle, Coolify and Vercel deployment, monitoring and smoke tests are not
-  complete.
-
-## Target Low-Cost Architecture
+## Production Topology
 
 ```text
 GitHub
-  └── Coolify self-hosted on a free/low-cost VM
-        ├── n8n
-        ├── PostgreSQL (private network only)
-        └── Astro landing
+|-- main -> Vercel production
+`-- local-development -> Vercel preview
 
-Cloudflare Free
-  ├── DNS
-  ├── CDN / proxy
-  └── Universal SSL
+Vercel
+`-- Astro static landing
+
+Oracle Cloud Always Free VM
+`-- Coolify
+    `-- Docker Compose application
+        |-- n8n
+        `-- PostgreSQL
 
 External services
-  ├── Cal.com Individual
-  ├── WhatsApp Cloud API
-  └── LLM providers with explicit usage limits
+|-- Cal.com
+|-- DeepSeek
+|-- Gemini
+`-- OpenRouter
 ```
 
-## Recommended Vertical Blocks
+## Live and Verified
 
-1. **WebChat**: landing → n8n → LLM → PostgreSQL → browser response.
-2. **Scheduling**: conversation → Cal.com → PostgreSQL → confirmation.
-3. **WhatsApp**: Meta webhook → n8n → LLM → reply → persisted history.
-4. **Production**: configuration → deployment → DNS/SSL → backup → smoke test.
+- Astro 7 landing deployed on Vercel.
+- Responsive desktop and mobile interface.
+- Mobile WebChat viewport handling for on-screen keyboards.
+- Production WebChat webhook over HTTPS.
+- Deterministic booking intake in the browser.
+- LLM provider routing and controlled fallback in n8n.
+- PostgreSQL conversation and message persistence.
+- Cal.com embedded scheduling.
+- Booking-created, rescheduled, and cancelled webhook processing.
+- Cal.com custom-field normalization.
+- Private PostgreSQL networking.
+- n8n and PostgreSQL health checks.
+- Coolify-managed persistent volumes.
+- Oracle Cost Analysis reporting no costs for the reviewed period.
+- Oracle monthly budget alerts for actual and forecast spending.
 
-Each block must be aligned at the beginning and then implemented and validated
-continuously against its acceptance criteria.
+## Prepared but Not Activated
+
+- WhatsApp Cloud API workflow and environment inventory.
+- Telegram bot workflow and credential integration point.
+- SMTP configuration for email notifications.
+
+These channels are not part of the live acceptance criteria until their
+provider accounts, production credentials, and end-to-end delivery have been
+validated.
+
+## Planned Extensions
+
+- Automated inbound and outbound voice calls.
+- Appointment reminders by WhatsApp, Telegram, email, SMS, or voice.
+- Human handoff and reception queues.
+- CRM synchronization.
+- Payment links and payment-status processing.
+- Analytics and conversion reporting.
+- Multi-clinic configuration.
+- Automated off-server backups and scheduled restore tests.
+
+## Known Constraints
+
+- Clinic identity, prices, contact information, and some content remain
+  demonstration values.
+- The public demo must use synthetic data only.
+- LLM availability depends on external providers, quotas, and account limits.
+- WhatsApp and Telegram require separate provider activation.
+- A single Oracle VM is a shared failure domain for n8n and PostgreSQL.
+- Backup restoration still requires a documented production exercise.
 
 ## Baseline Validation
 
@@ -76,8 +88,10 @@ npm ci
 npm run build
 
 Set-Location ../../infrastructure
-docker compose config --quiet
+docker compose --env-file .env.example config --quiet
 docker compose ps
 ```
 
-The Docker engine must be running before the infrastructure status check.
+Production smoke tests must additionally cover WebChat response and
+persistence, Cal.com booking lifecycle synchronization, HTTPS health checks,
+and verification that PostgreSQL is not publicly exposed.
