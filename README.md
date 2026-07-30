@@ -1,311 +1,309 @@
-# Dental Clinic Automation System
+# Dental Clinic Automation
 
-> **Agency-as-a-Service Architecture**
+[![Frontend CI](https://github.com/luismirand/dental-automatization/actions/workflows/ci.yml/badge.svg)](https://github.com/luismirand/dental-automatization/actions)
+[![Astro](https://img.shields.io/badge/Astro-7-BC52EE?logo=astro&logoColor=white)](https://astro.build/)
+[![n8n](https://img.shields.io/badge/n8n-Workflow_Automation-EA4B71?logo=n8n&logoColor=white)](https://n8n.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 
-A production-oriented monorepo that demonstrates an end-to-end automation platform for dental clinics. The system centralizes patient acquisition from a web landing page and WhatsApp, automates appointment scheduling through Cal.com, and stores patient information in PostgreSQL using a scalable, low-code architecture powered by n8n.
+A production-deployed reference implementation for automating patient
+inquiries, appointment intake, scheduling, and booking synchronization for a
+dental clinic.
 
----
+The project combines a responsive clinic website, an AI-assisted WebChat,
+Cal.com scheduling, n8n workflow orchestration, and PostgreSQL persistence.
+It is designed as a reusable foundation for agencies or clinics that need a
+clear path from a working demonstration to a multi-channel automation service.
 
-## Overview
+## Live Demo
 
-This project is designed to streamline the patient acquisition and appointment booking process while reducing the operational workload of front-desk staff.
+[Open the Smile Studio demo](https://dental-automatization.vercel.app/)
 
-The architecture combines a modern frontend, workflow automation, AI-assisted conversations, and centralized data management into a single platform that can be easily extended or customized for different clinics.
+The public deployment uses demonstration clinic content and test data. It is
+not a real medical service and must not be used to submit real patient
+information.
 
-### Core Features
+## Current Status
 
-- **Omnichannel Patient Acquisition**
-  - Interactive web landing page
-  - WhatsApp conversational assistant
-  - Unified patient onboarding experience
+| Capability | Status | Notes |
+|---|---|---|
+| Responsive clinic landing | Live | Astro, React, and Tailwind CSS on Vercel |
+| AI-assisted WebChat | Live | Connected to the production n8n webhook |
+| WebChat conversation history | Live | Persisted in PostgreSQL |
+| Cal.com scheduling | Live | Embedded booking flow |
+| Booking synchronization | Live | Created, rescheduled, and cancelled events |
+| PostgreSQL persistence | Live | Private Docker network; not publicly exposed |
+| n8n orchestration | Live | Self-hosted through Coolify |
+| WhatsApp Cloud API | Prepared | Workflow and configuration template included; not connected to a live Meta number |
+| Telegram bot | Prepared | Workflow and configuration template included; not connected to a live bot |
+| Email notifications | Prepared | SMTP variables and workflow extension points are available |
+| Automated voice calls | Planned | Can be added through a telephony provider and n8n workflows |
 
-- **AI-Powered Automation**
-  - LLM-assisted conversations
-  - Automated lead qualification
-  - Intelligent appointment scheduling
+## Patient Journey
 
-- **Workflow Orchestration**
-  - Built with **n8n**
-  - No-code/low-code automation
-  - Easy integration with external services
+```text
+Visitor
+  |
+  +-- Website content and service information
+  |
+  +-- Sofia WebChat
+  |     |
+  |     +-- intent classification
+  |     +-- clinic knowledge retrieval
+  |     +-- LLM provider fallback
+  |     +-- conversation persistence
+  |     +-- guided appointment intake
+  |
+  +-- Cal.com booking
+        |
+        +-- booking created
+        +-- booking rescheduled
+        +-- booking cancelled
+        |
+        +-- PostgreSQL appointment record
+```
 
-- **Appointment Management**
-  - Automated scheduling through **Cal.com**
-  - Calendar synchronization
-  - Booking confirmation workflows
+## Architecture
 
-- **Centralized Data Storage**
-  - PostgreSQL database
-  - Patient records
-  - Appointment history
-  - Interaction logs
+```mermaid
+flowchart LR
+    Visitor[Patient or visitor]
+    Web[Astro landing on Vercel]
+    Chat[WebChat]
+    Cal[Cal.com]
+    N8N[n8n on Coolify]
+    LLM[LLM providers]
+    DB[(PostgreSQL)]
+    WA[WhatsApp Cloud API]
+    TG[Telegram Bot API]
+    Voice[Voice or telephony provider]
 
----
+    Visitor --> Web
+    Web --> Chat
+    Web --> Cal
+    Chat --> N8N
+    Cal -->|booking webhooks| N8N
+    N8N --> LLM
+    N8N --> DB
+    WA -. optional channel .-> N8N
+    TG -. optional channel .-> N8N
+    Voice -. future channel .-> N8N
+```
 
-# Architecture
+The frontend and automation infrastructure are deployed independently:
 
-The platform is composed of four main layers:
+- Vercel serves the static landing page.
+- Oracle Cloud hosts the ARM64 production VM.
+- Coolify manages the n8n and PostgreSQL containers.
+- The Coolify proxy provides HTTPS routing to public application endpoints.
+- PostgreSQL remains accessible only inside the server and Docker network.
 
-1. **Frontend**
-   - Astro
-   - Tailwind CSS v4
-   - React Islands
+## Implemented Features
 
-2. **Automation Layer**
-   - n8n workflows
-   - AI integrations
-   - Business logic orchestration
+### Website
 
-3. **Scheduling**
-   - Cal.com API
-   - Automated appointment creation
+- Responsive dental clinic landing page.
+- Service, pricing, location, and contact sections.
+- Mobile WebChat adapted to the on-screen keyboard.
+- Cal.com scheduling integration.
+- Vercel preview and production deployments.
 
-4. **Persistence**
-   - PostgreSQL
-   - Relational data model
-   - Audit and interaction history
+### Conversational automation
 
----
+- Sofia, an AI-assisted clinic receptionist.
+- Deterministic handling for greetings and appointment intake.
+- Clinic-specific knowledge mounted as versioned files.
+- Provider routing through DeepSeek, Gemini, and OpenRouter.
+- Controlled fallback when an AI provider is unavailable.
+- Conversation history stored in PostgreSQL.
 
-# Repository Structure
+### Scheduling
+
+- Guided collection of patient name and email before booking.
+- Cal.com embedded scheduler.
+- Webhook processing for created, rescheduled, and cancelled bookings.
+- Normalization of custom Cal.com booking fields.
+- Appointment status history in PostgreSQL.
+
+### Operations
+
+- Docker Compose production stack.
+- Persistent PostgreSQL and n8n volumes.
+- Health checks for both services.
+- HTTPS deployment through Coolify.
+- Environment-based secret management.
+- Production and deployment runbooks.
+
+## Optional Channels
+
+The repository includes workflows and configuration points for additional
+channels, but they require separate provider accounts and credentials.
+
+### WhatsApp
+
+The prepared WhatsApp Cloud API integration can receive Meta webhooks, route
+messages through n8n, persist the conversation, and send a response. A live
+deployment requires a Meta application, a WhatsApp Business account, a phone
+number, webhook verification, and production credentials.
+
+### Telegram
+
+The prepared Telegram workflow can connect a bot to the same orchestration and
+data layer. A live deployment requires creating a bot, assigning its credential
+in n8n, validating the workflow, and activating it.
+
+### Automated voice calls
+
+Voice can be added as an inbound or outbound channel using a telephony or
+voice-agent provider. n8n can coordinate call events, appointment reminders,
+lead follow-up, human transfer, and PostgreSQL logging. This capability is not
+implemented in the current deployment.
+
+## Technology Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Astro 7, React 19, TypeScript, Tailwind CSS 4 |
+| Automation | n8n 2 |
+| Database | PostgreSQL 16 |
+| Scheduling | Cal.com |
+| AI providers | DeepSeek, Gemini, OpenRouter |
+| Containers | Docker and Docker Compose |
+| Frontend hosting | Vercel |
+| Backend hosting | Oracle Cloud and Coolify |
+
+## Repository Structure
 
 ```text
 .
-├── apps/
-│   └── web-landing/
-│       ├── src/
-│       ├── public/
-│       └── ...
-│
-├── infrastructure/
-│   ├── docker-compose.yml
-│   ├── postgres/
-│   ├── n8n_workflows/
-│   └── ...
-│
-├── docs/
-│   ├── architecture.md
-│   ├── database.md
-│   └── calcom.md
-│
-├── scripts/
-│
-└── README.md
+|-- apps/
+|   `-- web-landing/             Astro website and React components
+|-- infrastructure/
+|   |-- docker-compose.yml       Production stack
+|   |-- docker-compose.override.yml
+|   |-- init-db.sql              Initial PostgreSQL schema
+|   |-- migrations/              Incremental database migrations
+|   `-- n8n_workflows/           Versioned workflow exports
+|-- docs/
+|   |-- conocimiento/            Versioned clinic knowledge
+|   |-- architecture.md
+|   |-- current-state.md
+|   |-- database.md
+|   |-- calcom-integration.md
+|   |-- deploy-vercel.md
+|   `-- deploy_coolify.md
+|-- scripts/                     Maintenance and workflow utilities
+`-- README.md
 ```
 
-## Directory Description
+## Local Development
 
-### `apps/web-landing`
+### Requirements
 
-Frontend application developed with:
-
-- Astro
-- Tailwind CSS v4
-- React
-
-Includes:
-
-- Responsive landing page
-- Interactive UI components
-- Appointment selection interface
-- Service presentation
-- Lead generation forms
-
----
-
-### `infrastructure`
-
-Infrastructure configuration for local development.
-
-Includes:
-
-- Docker Compose
-- PostgreSQL
-- n8n
-- Database initialization scripts
-- Environment configuration
-
----
-
-### `infrastructure/n8n_workflows`
-
-Contains the workflow definitions responsible for:
-
-- WhatsApp message processing
-- AI conversation flows
-- Patient registration
-- Appointment scheduling
-- Database synchronization
-- External integrations
-
----
-
-### `docs`
-
-Technical documentation covering:
-
-- System architecture
-- Database schema
-- API integrations
-- Deployment guides
-- Development notes
-
----
-
-### `scripts`
-
-Utility scripts for:
-
-- Deployment
-- Maintenance
-- Environment setup
-- Development automation
-
----
-
-# Technology Stack
-
-## Frontend
-
-- Astro
-- React
-- Tailwind CSS v4
-- TypeScript
-
-## Backend & Automation
-
-- n8n
-- AI / LLM Integration
-- Cal.com API
-
-## Database
-
-- PostgreSQL
-
-## Infrastructure
-
-- Docker
-- Docker Compose
-
----
-
-# Prerequisites
-
-Before running the project, make sure the following software is installed:
-
-- Node.js 18+
+- Node.js 20 or later
 - npm
-- Docker
-- Docker Compose
+- Docker with Docker Compose
 - Git
 
----
+### Frontend
 
-# Getting Started
-
-## 1. Clone the Repository
-
-```bash
-git clone <repository-url>
-cd <repository-name>
-```
-
----
-
-## 2. Run the Frontend
-
-Navigate to the frontend application:
-
-```bash
-cd apps/web-landing
-```
-
-Install dependencies:
-
-```bash
-npm install
-```
-
-Start the development server:
-
-```bash
+```powershell
+Set-Location apps/web-landing
+npm ci
 npm run dev
 ```
 
----
+The local frontend uses the development WebChat configuration from
+`apps/web-landing/.env.example`.
 
-## 3. Start the Infrastructure
+### Infrastructure
 
-Navigate to the infrastructure directory:
-
-```bash
-cd infrastructure
-```
-
-Copy the environment variables:
-
-```bash
-cp .env.example .env
-```
-
-Start all services:
-
-```bash
+```powershell
+Set-Location infrastructure
+Copy-Item .env.example .env
 docker compose up -d
+docker compose ps
 ```
 
----
+Replace every placeholder in the local `.env` file. Never commit `.env` files,
+API keys, passwords, tokens, or exported production credentials.
 
-## 4. Import n8n Workflows
+### Import workflows
 
-Open your local n8n instance and import the workflow JSON files located in:
+Import the required JSON files from `infrastructure/n8n_workflows/` into n8n.
+Credential identifiers in an exported workflow may not match a new n8n
+instance, so credentials must be created or reassigned before activation.
 
-```text
-infrastructure/n8n_workflows/
+## Validation
+
+Run the frontend build:
+
+```powershell
+Set-Location apps/web-landing
+npm ci
+npm run build
 ```
 
-These workflows enable:
+Validate the Compose model:
 
-- WhatsApp automation
-- AI processing
-- Cal.com integration
-- PostgreSQL persistence
+```powershell
+Set-Location ../../infrastructure
+docker compose --env-file .env.example config --quiet
+```
 
----
+For an end-to-end release, also verify:
 
-# Development Workflow
+1. The WebChat webhook returns a JSON reply.
+2. The conversation is persisted in PostgreSQL.
+3. Cal.com can create a test booking.
+4. Booking changes are synchronized to PostgreSQL.
+5. PostgreSQL port 5432 is not publicly reachable.
+6. The landing works at mobile and desktop widths.
 
-1. Start PostgreSQL and n8n using Docker.
-2. Launch the Astro frontend.
-3. Import or update n8n workflows.
-4. Configure API credentials.
-5. Test the complete patient journey.
+## Deployment
 
----
+- [Frontend deployment on Vercel](docs/deploy-vercel.md)
+- [Backend deployment on Oracle Cloud and Coolify](docs/deploy_coolify.md)
+- [Cal.com integration](docs/calcom-integration.md)
+- [Meta and WhatsApp setup](docs/setup_meta_live.md)
+- [Low-cost production plan](docs/production-zero-cost-plan.md)
 
-# Project Goals
+Production secrets belong in Coolify or the relevant provider's secret store.
+Only public browser configuration may use Astro variables prefixed with
+`PUBLIC_`.
 
-- Automate patient acquisition.
-- Reduce manual administrative tasks.
-- Improve appointment conversion rates.
-- Centralize patient information.
-- Provide a scalable automation platform for dental clinics.
+## Extension Roadmap
 
----
+- Activate WhatsApp Cloud API.
+- Activate the Telegram bot.
+- Add automated appointment reminders.
+- Add inbound and outbound automated voice calls.
+- Add human handoff and reception queues.
+- Add email and SMS notifications.
+- Add CRM synchronization.
+- Add payment links and payment-status workflows.
+- Add operational analytics and conversion reporting.
+- Add multi-clinic tenancy and per-clinic knowledge.
+- Add backup automation and scheduled restore testing.
 
-# Future Improvements
+## Security and Privacy
 
-- Multi-clinic support
-- CRM integration
-- Payment gateway integration
-- Automated reminders
-- Analytics dashboard
-- Multi-language support
-- Voice AI integration
-- Role-based access control
+- Do not use real patient data in development or public demos.
+- Do not commit credentials or environment files.
+- Keep PostgreSQL private.
+- Use synthetic data for tests and screenshots.
+- Treat conversational and appointment data as sensitive.
+- Review applicable privacy, medical-data, and messaging regulations before
+  using this template with real patients.
 
----
+## Disclaimer
 
-# License
+This repository is an automation reference project, not a medical device. The
+assistant must not diagnose conditions, prescribe medication, or replace a
+qualified dental professional. Pricing and availability displayed by the demo
+are illustrative until replaced and reviewed by the operating clinic.
 
-This project is provided as a demonstration of an Agency-as-a-Service architecture for workflow automation in dental clinics. Customize and extend it according to your project's requirements.
+## License
+
+No open-source license has been granted yet. Unless a license file is added,
+the repository remains available for viewing but retains the author's default
+copyright protections.
