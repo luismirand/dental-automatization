@@ -22,6 +22,7 @@ Thumbs.db
 tmp_reference/
 pruebas/
 infrastructure/n8n_workflows/backups/
+infrastructure/_tmp_*
 *.json.tmp
 tmp_exec.json
 exec_unflatted.json
